@@ -52,6 +52,3 @@ print(f"⚡ Energia Economizada/mês: {economia_energia_mensal:,.0f} kWh")
 print(f"💰 Economia Financeira/mês: R$ {economia_financeira_mensal:,.2f}")
 print(f"📈 Economia Financeira/ano: R$ {economia_financeira_anual:,.2f}")
 print("=" * 50)
-git add .
-git commit -m "Implementa simulacao dos 10% do EcoMonitor Urbano"
-git push
