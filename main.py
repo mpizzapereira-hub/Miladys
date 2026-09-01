@@ -1,7 +1,11 @@
 import altair as alt
 import pandas as pd
 import streamlit as st
-
+import io
+from reportlab.lib.pagesizes import letter
+from reportlab.platypus import SimpleDocTemplate, Paragraph, Spacer, Table, TableStyle
+from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
+from reportlab.lib import colors
 st.set_page_config(
     page_title="EcoTwin - Monitoramento Residencial",
     page_icon="💧",
@@ -257,15 +261,129 @@ st.markdown(
 
 
 # ABAS DE NAVEGAÇÃO INTERATIVAS
-tab1, tab2, tab3, tab4, tab5 = st.tabs(
-    [
-        "📊 Diagnóstico & Metas",
-        "🎛️ Quiz de Hábitos",
-        "🚰 Caça aos Vazamentos",
-        "📈 Histórico do Ano",
-        "📄 Relatório & Dicas",
-    ]
-)
+# ---------------------------------------------------------
+# FUNÇÃO PARA GERAR O PDF
+# ---------------------------------------------------------
+def gerar_pdf_relatorio(
+    moradores,
+    banheiros,
+    uso_jardim_piscina,
+    consumo_atual_litros,
+    consumo_ideal_litros,
+    custo_atual_mes,
+):
+  buffer = io.BytesIO()
+  doc = SimpleDocTemplate(
+      buffer,
+      pagesize=letter,
+      rightMargin=36,
+      leftMargin=36,
+      topMargin=36,
+      bottomMargin=36,
+  )
+  story = []
+
+  styles = getSampleStyleSheet()
+  title_style = ParagraphStyle(
+      'TitleStyle',
+      parent=styles['Heading1'],
+      fontSize=18,
+      textColor=colors.HexColor('#0d3b2e'),
+      spaceAfter=12,
+  )
+  subtitle_style = ParagraphStyle(
+      'SubTitleStyle',
+      parent=styles['Heading2'],
+      fontSize=13,
+      textColor=colors.HexColor('#0d3b2e'),
+      spaceBefore=12,
+      spaceAfter=6,
+  )
+  body_style = styles['Normal']
+
+  story.append(
+      Paragraph(
+          '<b>Relatório de Diagnóstico Residencial - EcoTwin 💧</b>', title_style
+      )
+  )
+  story.append(Spacer(1, 10))
+
+  dados_residencia = [
+      ['Parâmetro', 'Valor'],
+      ['Número de Moradores', str(moradores)],
+      ['Número de Banheiros', str(banheiros)],
+      ['Possui Quintal/Piscina', 'Sim' if uso_jardim_piscina else 'Não'],
+      [
+          'Consumo Atual Mensal',
+          f'{consumo_atual_litros:,.0f} Litros'.replace(',', '.'),
+      ],
+      [
+          'Estimativa Ideal Recomendada',
+          f'{consumo_ideal_litros:,.0f} Litros'.replace(',', '.'),
+      ],
+      [
+          'Gasto Mensal Atual Estimado',
+          f'R$ {custo_atual_mes:.2f}'.replace('.', ','),
+      ],
+  ]
+
+  tabela = Table(dados_residencia, colWidths=[220, 220])
+  tabela.setStyle(
+      TableStyle([
+          ('BACKGROUND', (0, 0), (-1, 0), colors.HexColor('#0d3b2e')),
+          ('TEXTCOLOR', (0, 0), (-1, 0), colors.white),
+          ('ALIGN', (0, 0), (-1, -1), 'LEFT'),
+          ('FONTNAME', (0, 0), (-1, 0), 'Helvetica-Bold'),
+          ('BOTTOMPADDING', (0, 0), (-1, 0), 8),
+          ('BACKGROUND', (0, 1), (-1, -1), colors.HexColor('#f4f6f5')),
+          ('GRID', (0, 0), (-1, -1), 1, colors.HexColor('#cccccc')),
+      ])
+  )
+
+  story.append(tabela)
+  story.append(Spacer(1, 15))
+  story.append(
+      Paragraph(
+          '<b>Dicas de Economia e Próximos Passos:</b>', subtitle_style
+      )
+  )
+  story.append(
+      Paragraph(
+          '• Verifique periodicamente torneiras e descargas em busca de'
+          ' vazamentos.',
+          body_style,
+      )
+  )
+  story.append(
+      Paragraph(
+          '• Mantenha banhos em até 5 minutos para reduzir o consumo em até'
+          ' 40%.',
+          body_style,
+      )
+  )
+  story.append(
+      Paragraph(
+          '• Reutilize a água da máquina de lavar para limpezas gerais.',
+          body_style,
+      )
+  )
+
+  doc.build(story)
+  buffer.seek(0)
+  return buffer.getvalue()
+
+
+# ---------------------------------------------------------
+# ABAS DE NAVEGAÇÃO INTERATIVAS
+# ---------------------------------------------------------
+tab1, tab2, tab3, tab4, tab5 = st.tabs([
+    '📊 Diagnóstico & Metas',
+    '🔢 Quiz de Hábitos',
+    '🔍 Caça aos Vazamentos',
+    '📈 Histórico do Ano',
+    '📑 Relatório & Dicas',
+])
+
 
 
 # ABA 1: DIAGNÓSTICO E METAS
@@ -478,11 +596,19 @@ Economia financeira anual: R$ {formatar_numero(economia_financeira_ano, 2)}
 Gerado pelo EcoTwin - EcoMonitoramento Inteligente
 ==================================================
 """
+pdf_bytes = gerar_pdf_relatorio(
+    moradores, 
+    banheiros, 
+    uso_jardim_piscina, 
+    consumo_atual_litros, 
+    consumo_ideal_litros, 
+    custo_atual_mes
+)
 
-    st.download_button(
-        "Baixar Relatório Completo (.txt)",
-        data=relatorio_texto,
-        file_name="relatorio_ecotwin_completo.txt",
-        mime="text/plain",
-        use_container_width=True,
-    )
+st.download_button(
+    label="📄 Baixar Relatório em PDF",
+    data=pdf_bytes,
+    file_name="relatorio_ecotwin_completo.pdf",
+    mime="application/pdf",
+    use_container_width=True,
+)
