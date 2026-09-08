@@ -10,7 +10,7 @@ from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
 from reportlab.lib import colors
 
 # -----------------------------------------------------------------------------
-# CONFIGURAÇÃO E ESTILIZAÇÃO
+# CONFIGURAÇÃO E ESTILIZAÇÃO FUTURISTA / CIBERNÉTICA
 # -----------------------------------------------------------------------------
 st.set_page_config(
     page_title="EcoTwin - Plataforma Dinâmica Sustentável",
@@ -21,64 +21,155 @@ st.set_page_config(
 
 st.markdown("""
     <style>
+    /* Fundo Tecnológico e Futurista */
     .stApp {
-        background-color: #f4f9f5;
+        background: radial-gradient(circle at 50% -20%, #e8f5e9, #f4f9f5 70%);
+        font-family: 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
     }
+    
+    /* Sidebar Estilo Cyber */
     [data-testid="stSidebar"] {
-        background-color: #1b4332;
+        background: linear-gradient(180deg, #1b4332 0%, #0d2318 100%);
         color: #ffffff;
+        box-shadow: 4px 0px 15px rgba(27, 67, 50, 0.3);
     }
     [data-testid="stSidebar"] * {
         color: #ffffff !important;
     }
+    
+    /* Botões com Efeito Neon Cyber */
     .stButton>button {
-        background-color: #2d6a4f;
-        color: white !important;
-        border-radius: 8px;
-        border: none;
-        padding: 0.5rem 1rem;
+        background: linear-gradient(135deg, #2d6a4f 0%, #1b4332 100%);
+        color: #e8f5e9 !important;
+        border-radius: 10px;
+        border: 1px solid #52b788;
+        padding: 0.6rem 1.2rem;
         font-weight: bold;
+        letter-spacing: 0.5px;
+        box-shadow: 0 4px 12px rgba(45, 106, 79, 0.25);
+        transition: all 0.3s ease-in-out;
     }
     .stButton>button:hover {
-        background-color: #40916c;
-        color: white !important;
+        background: linear-gradient(135deg, #40916c 0%, #2d6a4f 100%);
+        box-shadow: 0 0 15px rgba(82, 183, 136, 0.6);
+        border-color: #74c69d;
+        transform: translateY(-2px);
     }
+    
+    /* Cabeçalhos Estilizados */
     h1, h2, h3 {
         color: #1b4332 !important;
+        font-weight: 800 !important;
+        letter-spacing: -0.5px;
+    }
+    
+    /* Metrics Futuristas */
+    [data-testid="stMetric"] {
+        background: rgba(255, 255, 255, 0.7);
+        backdrop-filter: blur(10px);
+        border-radius: 12px;
+        padding: 12px;
+        border: 1px solid rgba(82, 183, 136, 0.3);
+        box-shadow: 0 4px 12px rgba(0,0,0,0.03);
     }
     [data-testid="stMetricValue"] {
         color: #2d6a4f !important;
+        font-weight: 800;
     }
+    
+    /* Navegação por Tabs Cibernética */
     .stTabs [data-baseweb="tab-list"] {
-        gap: 8px;
+        gap: 10px;
     }
     .stTabs [data-baseweb="tab"] {
-        background-color: #e8f5e9;
-        border-radius: 6px 6px 0px 0px;
+        background-color: rgba(232, 245, 233, 0.6);
+        border-radius: 10px 10px 0px 0px;
         color: #1b4332;
-        font-weight: 600;
+        font-weight: 700;
+        border: 1px solid rgba(82, 183, 136, 0.2);
+        backdrop-filter: blur(5px);
+        padding: 8px 16px;
+        transition: all 0.2s ease;
     }
     .stTabs [aria-selected="true"] {
-        background-color: #2d6a4f !important;
-        color: white !important;
+        background: linear-gradient(135deg, #2d6a4f 0%, #1b4332 100%) !important;
+        color: #ffffff !important;
+        border-bottom: 3px solid #52b788 !important;
+        box-shadow: 0 4px 10px rgba(45, 106, 79, 0.3);
     }
+    
+    /* Cards com Efeito Glassmorphism */
     .info-card {
-        background-color: #ffffff;
-        padding: 18px;
-        border-radius: 12px;
+        background: rgba(255, 255, 255, 0.85);
+        backdrop-filter: blur(12px);
+        padding: 20px;
+        border-radius: 14px;
         border-left: 6px solid #2d6a4f;
-        box-shadow: 0 4px 6px rgba(0,0,0,0.05);
+        border-top: 1px solid rgba(82, 183, 136, 0.3);
+        border-right: 1px solid rgba(82, 183, 136, 0.3);
+        border-bottom: 1px solid rgba(82, 183, 136, 0.3);
+        box-shadow: 0 8px 20px rgba(0,0,0,0.04);
         margin-bottom: 15px;
     }
     .badge-card {
-        background-color: #ffffff;
-        padding: 15px;
-        border-radius: 10px;
+        background: rgba(255, 255, 255, 0.85);
+        backdrop-filter: blur(8px);
+        padding: 18px;
+        border-radius: 12px;
         border: 1px solid #b7e4c7;
+        box-shadow: 0 4px 10px rgba(0,0,0,0.02);
         text-align: center;
         margin-bottom: 10px;
     }
+
+    /* Mascot Aero Flutuante no Canto Inferior Direito */
+    .aero-widget {
+        position: fixed;
+        bottom: 20px;
+        right: 25px;
+        z-index: 9999;
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        animation: floatAnimation 3s ease-in-out infinite;
+    }
+    .aero-speech-bubble {
+        background: #ffffff;
+        color: #1b4332;
+        padding: 10px 16px;
+        border-radius: 16px 16px 2px 16px;
+        font-weight: bold;
+        font-size: 13px;
+        box-shadow: 0 4px 15px rgba(0,0,0,0.12);
+        border: 2px solid #52b788;
+        white-space: nowrap;
+    }
+    .aero-avatar {
+        width: 60px;
+        height: 60px;
+        background: linear-gradient(135deg, #2d6a4f 0%, #1b4332 100%);
+        border: 2px solid #52b788;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 30px;
+        box-shadow: 0 0 15px rgba(82, 183, 136, 0.6);
+        cursor: pointer;
+    }
+    
+    @keyframes floatAnimation {
+        0% { transform: translateY(0px); }
+        50% { transform: translateY(-8px); }
+        100% { transform: translateY(0px); }
+    }
     </style>
+
+    <!-- HTML do Aero Flutuante -->
+    <div class="aero-widget">
+        <div class="aero-speech-bubble">👋 Olá, Terra!</div>
+        <div class="aero-avatar">🤖</div>
+    </div>
 """, unsafe_allow_html=True)
 
 # Session State
@@ -87,7 +178,7 @@ if "vazamentos_detectados" not in st.session_state:
 
 if "messages" not in st.session_state:
     st.session_state.messages = [
-        {"role": "assistant", "content": "👋 **Olá! Eu sou o Aero!** O seu assistente pessoal de sustentabilidade.\n\nEstou aqui para te ajudar a economizar água, reduzir sua conta de energia e transformar sua casa em um ambiente ecológico e eficiente. Como posso te ajudar hoje?"}
+        {"role": "assistant", "content": "👋 **Olá, Terra! Eu sou o Aero!** O seu assistente pessoal de inteligência sustentável.\n\nEstou aqui para te ajudar a economizar água, reduzir sua conta de energia e transformar sua casa em um ambiente ecológico e eficiente. Como posso te ajudar hoje?"}
     ]
 
 # -----------------------------------------------------------------------------
@@ -252,13 +343,12 @@ with tab1:
         st.plotly_chart(fig_co2, use_container_width=True)
 
 # -----------------------------------------------------------------------------
-# TAB 2: CHAT IA (AERO) - AMIGÁVEL E COMUNICATIVO
+# TAB 2: CHAT IA (AERO)
 # -----------------------------------------------------------------------------
 with tab2:
     st.header("🤖 Conversar com o Aero (Seu Assistente Ecológico)")
     st.caption("Aero é um especialista em eficiência energética e consumo de água focado na sua casa.")
 
-    # Sugestões Rápidas de Perguntas
     st.write("💡 **Perguntas frequentes para começar:**")
     col_p1, col_p2, col_p3 = st.columns(3)
     p_clicada = None
@@ -326,7 +416,7 @@ with tab3:
             st.error("🚨 **Atenção Prioritária!** Alto potencial de desperdício. Comece desligando torneiras e trocando lâmpadas por modelos LED.")
 
 # -----------------------------------------------------------------------------
-# TAB 4: REGISTRO DE VAZAMENTOS - RÉGUA APERFEIÇOADA E PRECISA
+# TAB 4: REGISTRO DE VAZAMENTOS
 # -----------------------------------------------------------------------------
 with tab4:
     st.header("🔍 Caça e Registro de Vazamentos")
@@ -343,7 +433,6 @@ with tab4:
             "Tubulação Externa / Hidrômetro"
         ])
         
-        # Régua/Slider aprimorada com valores precisos em gotas/tempo
         ritmo_gotas = st.select_slider(
             "💧 Frequência/Intensidade do Vazamento",
             options=[
@@ -356,7 +445,6 @@ with tab4:
             value="1 gota por segundo (Gotejamento Médio)"
         )
 
-        # Cálculo de precisão em Litros
         fatores_litros_dia = {
             "1 gota a cada 5 segundos (Muito Lento)": 5,
             "1 gota por segundo (Gotejamento Médio)": 46,
@@ -417,18 +505,16 @@ with tab4:
             st.plotly_chart(fig_vaz, use_container_width=True)
 
 # -----------------------------------------------------------------------------
-# TAB 5: GAMIFICAÇÃO - DETALHADA E MOTIVACIONAL
+# TAB 5: GAMIFICAÇÃO
 # -----------------------------------------------------------------------------
 with tab5:
     st.header("🎮 Suas Conquistas EcoTwin")
     st.write("Acompanhe sua jornada rumo ao consumo zero desperdício!")
 
-    # Barra de Progresso Geral
     progresso = min(meta_reducao_pct / 50.0, 1.0)
     st.write(f"**Progresso da Meta Atual ({meta_reducao_pct}% de redução):**")
     st.progress(progresso)
 
-    # Nível Atual
     col_niv1, col_niv2, col_niv3 = st.columns(3)
     
     if meta_reducao_pct >= 30:
@@ -460,7 +546,7 @@ with tab5:
         """, unsafe_allow_html=True)
 
     with col_b2:
-        st.markdown(f"""
+        st.markdown("""
         <div class='badge-card'>
             <h3>⚡</h3>
             <b>Mestre do LED</b>
@@ -469,7 +555,7 @@ with tab5:
         """, unsafe_allow_html=True)
 
     with col_b3:
-        st.markdown(f"""
+        st.markdown("""
         <div class='badge-card'>
             <h3>🍃</h3>
             <b>Pegada Leve</b>
