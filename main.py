@@ -64,11 +64,19 @@ st.markdown("""
     }
     .info-card {
         background-color: #ffffff;
-        padding: 15px;
-        border-radius: 8px;
-        border-left: 5px solid #2d6a4f;
-        box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+        padding: 18px;
+        border-radius: 12px;
+        border-left: 6px solid #2d6a4f;
+        box-shadow: 0 4px 6px rgba(0,0,0,0.05);
         margin-bottom: 15px;
+    }
+    .badge-card {
+        background-color: #ffffff;
+        padding: 15px;
+        border-radius: 10px;
+        border: 1px solid #b7e4c7;
+        text-align: center;
+        margin-bottom: 10px;
     }
     </style>
 """, unsafe_allow_html=True)
@@ -79,7 +87,7 @@ if "vazamentos_detectados" not in st.session_state:
 
 if "messages" not in st.session_state:
     st.session_state.messages = [
-        {"role": "assistant", "content": "Olá! Eu sou o Aero, sua IA de inteligência sustentável! 🌿 Como posso te ajudar hoje?"}
+        {"role": "assistant", "content": "👋 **Olá! Eu sou o Aero!** O seu assistente pessoal de sustentabilidade.\n\nEstou aqui para te ajudar a economizar água, reduzir sua conta de energia e transformar sua casa em um ambiente ecológico e eficiente. Como posso te ajudar hoje?"}
     ]
 
 # -----------------------------------------------------------------------------
@@ -121,7 +129,7 @@ creditos_carbono_ano = co2_evitado_ano_kg / 1000.0
 
 economia_financeira_mes = economia_agua_litros * 0.008
 
-# Gerador de PDF
+# Função para Gerar PDF
 def gerar_pdf():
     buffer = io.BytesIO()
     doc = SimpleDocTemplate(buffer, pagesize=letter)
@@ -244,21 +252,49 @@ with tab1:
         st.plotly_chart(fig_co2, use_container_width=True)
 
 # -----------------------------------------------------------------------------
-# TAB 2: CHAT IA
+# TAB 2: CHAT IA (AERO) - AMIGÁVEL E COMUNICATIVO
 # -----------------------------------------------------------------------------
 with tab2:
-    st.header("🤖 Conversar com o Aero (IA Sustentável)")
+    st.header("🤖 Conversar com o Aero (Seu Assistente Ecológico)")
+    st.caption("Aero é um especialista em eficiência energética e consumo de água focado na sua casa.")
+
+    # Sugestões Rápidas de Perguntas
+    st.write("💡 **Perguntas frequentes para começar:**")
+    col_p1, col_p2, col_p3 = st.columns(3)
+    p_clicada = None
+    if col_p1.button("💧 Como economizar no banho?"):
+        p_clicada = "Como economizar no banho sem perder o conforto?"
+    if col_p2.button("💰 Como reduzir a conta de luz?"):
+        p_clicada = "Quais as melhores dicas para reduzir o consumo de energia?"
+    if col_p3.button("🌱 O que são Créditos de Carbono?"):
+        p_clicada = "Pode me explicar de forma simples o que são Créditos de Carbono?"
+
+    st.markdown("---")
+
     for message in st.session_state.messages:
         with st.chat_message(message["role"]):
             st.markdown(message["content"])
 
-    if prompt := st.chat_input("Pergunte ao Aero..."):
-        st.session_state.messages.append({"role": "user", "content": prompt})
+    prompt_user = st.chat_input("Escreva sua dúvida aqui para o Aero...")
+    
+    prompt_final = p_clicada if p_clicada else prompt_user
+
+    if prompt_final:
+        st.session_state.messages.append({"role": "user", "content": prompt_final})
         with st.chat_message("user"):
-            st.markdown(prompt)
+            st.markdown(prompt_final)
 
         with st.chat_message("assistant"):
-            resposta = f"🌿 Analisando sua dúvida sobre '{prompt}': otimizar a meta de redução na barra lateral é o primeiro passo para gerar maior impacto econômico e ambiental no EcoTwin!"
+            texto_lower = prompt_final.lower()
+            if "banho" in texto_lower:
+                resposta = "🚿 **Dica do Aero para o Banho:**\n\nReduzir apenas 2 minutos do banho diário economiza até **1.080 Litros de água por mês** por pessoa! Além disso, fechar o chuveiro enquanto se ensaboa economiza energia elétrica diretamente."
+            elif "luz" in texto_lower or "energia" in texto_lower:
+                resposta = "⚡ **Dica do Aero para Energia:**\n\n- Troque lâmpadas antigas por LED (economizam até 80%).\n- Tire aparelhos em *stand-by* da tomada.\n- Utilize a máquina de lavar louça ou roupa sempre cheias!"
+            elif "carbono" in texto_lower:
+                resposta = "🌱 **Explicação do Aero:**\n\nCréditos de carbono são como 'pontos ecológicos'. Cada vez que você deixa de emitir 1.000 kg de CO₂ economizando recursos, você cria 1 Crédito de Carbono que ajuda o planeta!"
+            else:
+                resposta = f"😊 Excelente pergunta sobre **'{prompt_final}'**!\n\nCom base nos dados que você inseriu na barra lateral ({moradores} moradores e meta de {meta_reducao_pct}%), cada pequena mudança de hábito gera um impacto acumulado enorme na sua economia financeira e no meio ambiente. Posso ajudar com mais detalhes sobre água ou energia?"
+
             st.markdown(resposta)
             st.session_state.messages.append({"role": "assistant", "content": resposta})
 
@@ -290,48 +326,171 @@ with tab3:
             st.error("🚨 **Atenção Prioritária!** Alto potencial de desperdício. Comece desligando torneiras e trocando lâmpadas por modelos LED.")
 
 # -----------------------------------------------------------------------------
-# TAB 4: REGISTRO DE VAZAMENTOS
+# TAB 4: REGISTRO DE VAZAMENTOS - RÉGUA APERFEIÇOADA E PRECISA
 # -----------------------------------------------------------------------------
 with tab4:
     st.header("🔍 Caça e Registro de Vazamentos")
-    
-    col_v1, col_v2 = st.columns(2)
-    with col_v1:
-        local = st.selectbox("Local do Vazamento", ["Torneira", "Chuveiro", "Vaso Sanitário / Descarga", "Infiltração", "Tubulação Externa"])
-        gravidade = st.select_slider("Gravidade do Vazamento", options=["Gotejamento Lento", "Gotejamento Rápido", "Fluxo Contínuo"])
-        
-    with col_v2:
-        est_perda = 100 if gravidade == "Gotejamento Lento" else (300 if gravidade == "Gotejamento Rápido" else 1000)
-        st.info(f"💧 **Desperdício Estimado:** ~{est_perda} Litros/mês")
+    st.write("Identifique e meça o impacto financeiro e ambiental de vazamentos na sua casa com alta precisão.")
 
-    if st.button("Registrar Ocorrência"):
-        st.session_state.vazamentos_detectados.append({"Local": local, "Gravidade": gravidade, "Desperdício (L/mês)": est_perda})
+    col_v1, col_v2 = st.columns([1, 1])
+    
+    with col_v1:
+        local = st.selectbox("📌 Local do Vazamento", [
+            "Torneira da Cozinha/Banheiro", 
+            "Vaso Sanitário / Descarga", 
+            "Chuveiro", 
+            "Infiltração na Parede", 
+            "Tubulação Externa / Hidrômetro"
+        ])
+        
+        # Régua/Slider aprimorada com valores precisos em gotas/tempo
+        ritmo_gotas = st.select_slider(
+            "💧 Frequência/Intensidade do Vazamento",
+            options=[
+                "1 gota a cada 5 segundos (Muito Lento)",
+                "1 gota por segundo (Gotejamento Médio)",
+                "2 a 3 gotas por segundo (Gotejamento Rápido)",
+                "Fio de água contínuo (1 mm)",
+                "Fluxo aberto / Infiltração Severa"
+            ],
+            value="1 gota por segundo (Gotejamento Médio)"
+        )
+
+        # Cálculo de precisão em Litros
+        fatores_litros_dia = {
+            "1 gota a cada 5 segundos (Muito Lento)": 5,
+            "1 gota por segundo (Gotejamento Médio)": 46,
+            "2 a 3 gotas por segundo (Gotejamento Rápido)": 120,
+            "Fio de água contínuo (1 mm)": 380,
+            "Fluxo aberto / Infiltração Severa": 1200
+        }
+
+        litros_dia = fatores_litros_dia[ritmo_gotas]
+        litros_mes = litros_dia * 30
+        custo_vazamento_mes = litros_mes * 0.012
+
+    with col_v2:
+        st.markdown("<div class='info-card'>", unsafe_allow_html=True)
+        st.subheader("📊 Estimativa Direta de Perda")
+        
+        cv1, cv2 = st.columns(2)
+        cv1.metric("Perda Diária", f"{litros_dia} Litros/dia")
+        cv2.metric("Perda Mensal", f"{litros_mes:,.0f} L/mês")
+        
+        st.metric("💸 Prejuízo Financeiro Estimado", f"R$ {custo_vazamento_mes:.2f} /mês", delta="- Custo Adicional", delta_color="inverse")
+        
+        if litros_mes < 200:
+            st.info("💡 **Ação recomendada:** Troca da vedação/borrachinha do reparo.")
+        elif litros_mes < 1000:
+            st.warning("⚠️ **Ação recomendada:** Troca do mecanismo interno da torneira ou caixa acoplada.")
+        else:
+            st.error("🚨 **Ação urgente:** Chame um encanador imediato para evitar danos estruturais.")
+            
+        st.markdown("</div>", unsafe_allow_html=True)
+
+    if st.button("➕ Registrar Ocorrência no Painel"):
+        st.session_state.vazamentos_detectados.append({
+            "Local": local, 
+            "Intensidade": ritmo_gotas.split("(")[0], 
+            "Desperdício (L/mês)": litros_mes,
+            "Custo (R$)": round(custo_vazamento_mes, 2)
+        })
         st.success(f"Vazamento no(a) **{local}** registrado com sucesso!")
 
     if st.session_state.vazamentos_detectados:
         st.markdown("---")
-        st.subheader("📋 Painel de Ocorrências e Impacto Visual")
+        st.subheader("📋 Painel de Vazamentos Ativos")
         df_vaz = pd.DataFrame(st.session_state.vazamentos_detectados)
         
         col_t1, col_t2 = st.columns([1, 1])
         with col_t1:
             st.dataframe(df_vaz, use_container_width=True)
         with col_t2:
-            fig_vaz = px.bar(df_vaz, x="Local", y="Desperdício (L/mês)", color="Gravidade", title="Desperdício por Ponto Registrado", color_discrete_sequence=['#52b788', '#2d6a4f', '#1b4332'])
+            fig_vaz = px.bar(
+                df_vaz, 
+                x="Local", 
+                y="Desperdício (L/mês)", 
+                color="Local", 
+                title="Desperdício Mensal por Ponto",
+                color_discrete_sequence=['#2d6a4f', '#40916c', '#52b788', '#74c69d']
+            )
             st.plotly_chart(fig_vaz, use_container_width=True)
 
 # -----------------------------------------------------------------------------
-# TAB 5: GAMIFICAÇÃO
+# TAB 5: GAMIFICAÇÃO - DETALHADA E MOTIVACIONAL
 # -----------------------------------------------------------------------------
 with tab5:
     st.header("🎮 Suas Conquistas EcoTwin")
-    if meta_reducao_pct >= 20:
+    st.write("Acompanhe sua jornada rumo ao consumo zero desperdício!")
+
+    # Barra de Progresso Geral
+    progresso = min(meta_reducao_pct / 50.0, 1.0)
+    st.write(f"**Progresso da Meta Atual ({meta_reducao_pct}% de redução):**")
+    st.progress(progresso)
+
+    # Nível Atual
+    col_niv1, col_niv2, col_niv3 = st.columns(3)
+    
+    if meta_reducao_pct >= 30:
+        col_niv1.metric("🏆 Nível Atual", "Lorde da Sustentabilidade")
+        col_niv2.metric("⭐ Status", "Selo Ouro")
+        col_niv3.metric("🌱 Impacto", "Altíssimo")
         st.balloons()
-        st.success("🏆 **Nível: Mestre Sustentável** — Meta de redução superior a 20%!")
-    elif meta_reducao_pct >= 10:
-        st.info("🛡️ **Nível: Defensor do Planeta** — Meta de redução entre 10% e 19%.")
+    elif meta_reducao_pct >= 15:
+        col_niv1.metric("🛡️ Nível Atual", "Defensor do Planeta")
+        col_niv2.metric("⭐ Status", "Selo Prata")
+        col_niv3.metric("🌱 Impacto", "Moderado")
     else:
-        st.warning("🌱 **Nível: Aprendiz Consciente** — Aumente sua meta para desbloquear novos níveis!")
+        col_niv1.metric("🌱 Nível Atual", "Aprendiz Consciente")
+        col_niv2.metric("⭐ Status", "Selo Bronze")
+        col_niv3.metric("🌱 Impacto", "Iniciante")
+
+    st.markdown("---")
+    st.subheader("🎖️ Quadro de Insígnias Desbloqueadas")
+
+    col_b1, col_b2, col_b3, col_b4 = st.columns(4)
+
+    with col_b1:
+        st.markdown("""
+        <div class='badge-card'>
+            <h3>💧</h3>
+            <b>Guardião da Água</b>
+            <p><small>Economizou mais de 1.000L de água no mês.</small></p>
+        </div>
+        """, unsafe_allow_html=True)
+
+    with col_b2:
+        st.markdown(f"""
+        <div class='badge-card'>
+            <h3>⚡</h3>
+            <b>Mestre do LED</b>
+            <p><small>Meta de redução de energia superior a 10%.</small></p>
+        </div>
+        """, unsafe_allow_html=True)
+
+    with col_b3:
+        st.markdown(f"""
+        <div class='badge-card'>
+            <h3>🍃</h3>
+            <b>Pegada Leve</b>
+            <p><small>Evitou mais de 10kg de carbono por ano.</small></p>
+        </div>
+        """, unsafe_allow_html=True)
+
+    with col_b4:
+        st.markdown("""
+        <div class='badge-card'>
+            <h3>🔍</h3>
+            <b>Caçador de Gotas</b>
+            <p><small>Registrou um vazamento no painel.</small></p>
+        </div>
+        """, unsafe_allow_html=True)
+
+    st.markdown("---")
+    st.subheader("🎯 Missões Semanais de Sustentabilidade")
+    m1 = st.checkbox("Reduzir o tempo do banho para 5 minutos por 3 dias seguidos (+50 pts)")
+    m2 = st.checkbox("Verificar se há torneiras pingando na casa (+30 pts)")
+    m3 = st.checkbox("Desligar os aparelhos da tomada durante a noite (+40 pts)")
 
 # -----------------------------------------------------------------------------
 # TAB 6: RELATÓRIOS
@@ -348,4 +507,4 @@ with tab6:
         file_name="Relatorio_Tecnico_EcoTwin.pdf",
         mime="application/pdf",
         use_container_width=True
-    )mime="text/plain", use_container_width=True)
+    )
