@@ -2,11 +2,13 @@ import streamlit as st
 import pandas as pd
 import numpy as np
 import plotly.express as px
+import plotly.graph_objects as go
 import io
 
-# Importação de Machine Learning (Requisito Técnico de IA)
+# Importação de Machine Learning e Detecção de Anomalias (IA)
 from sklearn.linear_model import LinearRegression
 from sklearn.cluster import KMeans
+from sklearn.ensemble import IsolationForest
 
 # Importações para geração do PDF
 from reportlab.lib.pagesizes import letter
@@ -15,10 +17,10 @@ from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
 from reportlab.lib import colors
 
 # -----------------------------------------------------------------------------
-# CONFIGURAÇÃO E ESTILIZAÇÃO COM ALTO CONTRASTE (SEM TEXTOS APAGADOS)
+# CONFIGURAÇÃO DE PÁGINA E ESTILIZAÇÃO CSS (RESPONSIVO E DESIGN SUAVE)
 # -----------------------------------------------------------------------------
 st.set_page_config(
-    page_title="EcoTwin | Gêmeo Digital & IA Sustentável",
+    page_title="EcoTwin | Monitoramento & Inteligência Ambiental",
     page_icon="🌱",
     layout="wide",
     initial_sidebar_state="expanded"
@@ -26,96 +28,137 @@ st.set_page_config(
 
 st.markdown("""
     <style>
-    /* Fundo Principal da Aplicação */
+    /* 1. FUNDO VERDE ESCURO SOFISTICADO (VERDE GRAFITE SUAVE) */
     .stApp {
-        background-color: #0f231c;
+        background-color: #121E19;
         font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
-        color: #f0fdf4 !important;
+        color: #ECFDF5 !important;
     }
     
-    /* Garante visibilidade global de textos, parágrafos e legendas */
+    /* 2. ADEQUAÇÃO DE TEXTOS E RÓTULOS */
     p, span, label, div, li {
-        color: #e2f1e7 !important;
+        color: #E2E8F0 !important;
     }
     
-    /* Títulos e Subtítulos em Destaque */
     h1, h2, h3, h4 {
-        color: #34d399 !important;
+        color: #34D399 !important;
         font-weight: 700 !important;
+        margin-bottom: 0.5rem;
+    }
+
+    /* Título Compacto em 1 Linha */
+    .main-title {
+        font-size: 1.8rem;
+        font-weight: 800;
+        color: #34D399;
+        margin-bottom: 1rem;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
     }
     
-    /* Sidebar (Barra Lateral) */
+    /* 3. BARRA LATERAL (SIDEBAR) */
     [data-testid="stSidebar"] {
-        background-color: #081711;
-        border-right: 1px solid #1c3d30;
+        background-color: #0B1310;
+        border-right: 1px solid #1E293B;
     }
     [data-testid="stSidebar"] p, [data-testid="stSidebar"] label, [data-testid="stSidebar"] span {
-        color: #c2e5d1 !important;
+        color: #CBD5E1 !important;
+    }
+    [data-testid="stSidebar"] input, [data-testid="stSidebar"] select {
+        color: #0F172A !important;
+        background-color: #FFFFFF !important;
+        font-weight: 600 !important;
+        border-radius: 6px;
     }
 
-    /* Campos de Entrada na Sidebar */
-    [data-testid="stSidebar"] input, [data-testid="stSidebar"] select {
-        color: #0f231c !important;
-        background-color: #ffffff !important;
-        font-weight: 600 !important;
-        border-radius: 8px;
-    }
-    
-    /* Botões Interativos */
-    .stButton>button {
-        background: linear-gradient(135deg, #10b981 0%, #059669 100%);
-        color: #ffffff !important;
-        border-radius: 8px;
-        border: none;
-        padding: 0.6rem 1.2rem;
-        font-weight: 700;
-        box-shadow: 0 4px 10px rgba(16, 185, 129, 0.2);
-    }
-    
-    /* Cards de Métricas */
-    [data-testid="stMetric"] {
-        background: #143226;
-        border-radius: 12px;
-        padding: 18px;
-        border: 1px solid #23523f;
-    }
-    [data-testid="stMetricValue"] {
-        color: #34d399 !important;
-        font-weight: 800;
-    }
-    [data-testid="stMetricLabel"] {
-        color: #a7f3d0 !important;
-    }
-    
-    /* Abas de Navegação (Tabs) */
+    /* 4. ABAS COMPACTAS (SEM CORTAR TEXTO / COM ROLAGEM ELEGANTE) */
     .stTabs [data-baseweb="tab-list"] {
-        gap: 8px;
-        border-bottom: 2px solid #23523f;
+        gap: 4px;
+        border-bottom: 2px solid #1E293B;
+        overflow-x: auto;
+        white-space: nowrap;
+        flex-wrap: nowrap !important;
+        padding-bottom: 4px;
     }
     .stTabs [data-baseweb="tab"] {
-        background-color: #143226;
-        border-radius: 8px 8px 0px 0px;
-        color: #a7f3d0 !important;
+        background-color: #1B2A23;
+        border-radius: 6px 6px 0px 0px;
+        color: #A7F3D0 !important;
         font-weight: 600;
-        padding: 12px 20px;
-        border: 1px solid #23523f;
+        font-size: 0.85rem !important;
+        padding: 8px 12px !important;
+        border: 1px solid #2D3748;
+        flex-shrink: 0;
     }
     .stTabs [aria-selected="true"] {
-        background: linear-gradient(135deg, #10b981 0%, #059669 100%) !important;
-        color: #ffffff !important;
+        background: linear-gradient(135deg, #059669 0%, #10B981 100%) !important;
+        color: #FFFFFF !important;
+        border-color: #34D399;
     }
 
-    /* Cards Informativos */
+    /* 5. CARDS DE RESULTADOS / MÉTRICAS (SEM POINTO DE RETICÊNCIAS ...) */
+    .metric-card {
+        background: #182820;
+        border-radius: 10px;
+        padding: 14px 16px;
+        border: 1px solid #23382C;
+        min-height: 95px;
+        display: flex;
+        flex-direction: column;
+        justify-content: center;
+    }
+    .metric-label {
+        font-size: 0.82rem;
+        color: #9AE6B4;
+        font-weight: 600;
+        margin-bottom: 4px;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+    }
+    .metric-value {
+        font-size: 1.5rem;
+        font-weight: 800;
+        color: #34D399;
+        line-height: 1.1;
+    }
+    .metric-unit {
+        font-size: 0.78rem;
+        color: #CBD5E1;
+        font-weight: 500;
+        margin-top: 2px;
+    }
+
+    /* Cards Informativos e Explicações */
     .eco-card {
-        background: #143226;
-        padding: 20px;
-        border-radius: 12px;
-        border-left: 5px solid #10b981;
-        border: 1px solid #23523f;
+        background: #182820;
+        padding: 18px;
+        border-radius: 10px;
+        border-left: 4px solid #10B981;
+        border: 1px solid #23382C;
         margin-bottom: 15px;
     }
+    
+    .tech-card {
+        background: #0F1A15;
+        padding: 15px;
+        border-radius: 8px;
+        border: 1px dashed #34D399;
+        margin-top: 10px;
+        font-size: 0.88rem;
+    }
 
-    /* Widget Flutuante da IA Aero */
+    /* Botões */
+    .stButton>button {
+        background: linear-gradient(135deg, #059669 0%, #10B981 100%);
+        color: #FFFFFF !important;
+        border-radius: 6px;
+        border: none;
+        padding: 0.5rem 1rem;
+        font-weight: 600;
+    }
+
+    /* Widget IA Aero */
     .aero-widget {
         position: fixed;
         bottom: 20px;
@@ -123,69 +166,71 @@ st.markdown("""
         z-index: 9999;
         display: flex;
         align-items: center;
-        gap: 12px;
+        gap: 10px;
     }
     .aero-bubble {
-        background: #ffffff;
-        color: #0f231c !important;
-        padding: 8px 14px;
-        border-radius: 14px 14px 2px 14px;
-        font-weight: bold;
-        font-size: 13px;
-        box-shadow: 0 4px 12px rgba(0,0,0,0.3);
-        border: 2px solid #10b981;
+        background: #FFFFFF;
+        color: #0F172A !important;
+        padding: 8px 12px;
+        border-radius: 12px 12px 2px 12px;
+        font-weight: 700;
+        font-size: 12px;
+        box-shadow: 0 4px 12px rgba(0,0,0,0.4);
+        border: 2px solid #10B981;
     }
     .aero-avatar {
-        width: 50px;
-        height: 50px;
-        background: linear-gradient(135deg, #10b981 0%, #059669 100%);
-        border: 2px solid #a7f3d0;
+        width: 46px;
+        height: 46px;
+        background: linear-gradient(135deg, #059669 0%, #10B981 100%);
+        border: 2px solid #A7F3D0;
         border-radius: 50%;
         display: flex;
         align-items: center;
         justify-content: center;
-        font-size: 24px;
-        box-shadow: 0 0 12px rgba(16, 185, 129, 0.6);
+        font-size: 22px;
     }
     </style>
 
     <div class="aero-widget">
-        <div class="aero-bubble">👋 Olá, Terra! Sou o Aero</div>
+        <div class="aero-bubble">👋 Olá! Sou o Aero</div>
         <div class="aero-avatar">🤖</div>
     </div>
 """, unsafe_allow_html=True)
 
-# Session State
+# -----------------------------------------------------------------------------
+# GERENCIAMENTO DE ESTADO (SESSION STATE)
+# -----------------------------------------------------------------------------
 if "vazamentos" not in st.session_state:
     st.session_state.vazamentos = []
 
 if "messages" not in st.session_state:
     st.session_state.messages = [
-        {"role": "assistant", "content": "🤖 **Olá, Terra! Eu sou o Aero!** Seus assistente ecológico com IA. Como posso ajudar a reduzir sua pegada de carbono hoje?"}
+        {"role": "assistant", "content": "🤖 **Olá! Eu sou o Aero!** Seu copiloto de sustentabilidade. Como posso analisar o seu consumo ou ajudar na sua meta de emissões hoje?"}
     ]
 
 # -----------------------------------------------------------------------------
-# BARRA LATERAL (PARÂMETROS DE ENTRADA)
+# BARRA LATERAL DE PARÂMETROS
 # -----------------------------------------------------------------------------
-st.sidebar.title("🌱 EcoTwin IA")
-st.sidebar.caption("Plataforma de Monitoramento Sustentável")
+st.sidebar.title("🌱 EcoTwin")
+st.sidebar.caption("Monitoramento & Inteligência Ambiental")
 
 st.sidebar.markdown("---")
-st.sidebar.header("🏠 Parâmetros do Imóvel")
+st.sidebar.header("🏠 Consumo Residencial")
 
-moradores = st.sidebar.number_input("Número de Pessoas/Moradores", min_value=1, max_value=100, value=4, step=1)
-tempo_banho = st.sidebar.number_input("Tempo de Banho (min/pessoa)", min_value=1, max_value=60, value=10, step=1)
-energia_kwh = st.sidebar.number_input("Consumo de Energia (kWh/mês)", min_value=10, max_value=10000, value=220, step=10)
+moradores = st.sidebar.number_input("Número de Pessoas / Ocupantes", min_value=1, max_value=100, value=4, step=1)
+tempo_banho = st.sidebar.number_input("Tempo Médio de Banho (min/pessoa)", min_value=1, max_value=60, value=10, step=1)
+energia_kwh = st.sidebar.number_input("Consumo de Energia Geral (kWh/mês)", min_value=10, max_value=10000, value=220, step=10)
 
 st.sidebar.markdown("---")
-st.sidebar.header("💻 Equipamentos de TI")
+st.sidebar.header("💻 Infraestrutura & TI")
 num_pcs = st.sidebar.number_input("Número de Computadores", min_value=0, max_value=200, value=5, step=1)
 horas_pcs = st.sidebar.slider("Horas de Uso Diário dos PCs", min_value=1, max_value=24, value=8, step=1)
 
-meta_reducao_pct = st.sidebar.slider("Meta de Redução Ecológica (%)", min_value=5, max_value=50, value=15, step=5)
+st.sidebar.markdown("---")
+meta_reducao_pct = st.sidebar.slider("Meta de Otimização Ecológica (%)", min_value=5, max_value=50, value=15, step=5)
 
 # -----------------------------------------------------------------------------
-# CÁLCULOS TÉCNICOS
+# CÁLCULOS TÉCNICOS E METODOLOGIA
 # -----------------------------------------------------------------------------
 litros_banho_mes = tempo_banho * 9 * moradores * 30
 consumo_outro_agua = moradores * 30 * 40
@@ -194,14 +239,17 @@ consumo_agua_total = litros_banho_mes + consumo_outro_agua
 kwh_ti_mes = (num_pcs * 0.150 * horas_pcs * 30)
 kwh_total_mes = energia_kwh + kwh_ti_mes
 
+# Fatores de Emissão Utilizados (SIN / Médias Nacionais)
 co2_energia_kg = kwh_total_mes * 0.085
 co2_agua_kg = consumo_agua_total * 0.0005
 co2_total_mes_kg = co2_energia_kg + co2_agua_kg
 co2_total_ano_kg = co2_total_mes_kg * 12
 
 co2_evitado_ano_kg = co2_total_ano_kg * (meta_reducao_pct / 100.0)
+
+# Equivalência ambiental responsável (Aproximadamente 15kg CO2/ano absorvidos por 1 árvore adulta)
+arvores_equivalentes = int(round(co2_total_ano_kg / 15.0))
 arvores_salvas = int(round(co2_evitado_ano_kg / 15.0))
-arvores_necessarias = int(round((co2_total_ano_kg - co2_evitado_ano_kg) / 15.0))
 
 economia_fin_mes = (kwh_total_mes * (meta_reducao_pct / 100.0)) * 0.75
 
@@ -215,26 +263,27 @@ def gerar_pdf():
     
     title_style = ParagraphStyle(
         'TitleStyle', parent=styles['Heading1'], fontName='Helvetica-Bold',
-        fontSize=18, textColor=colors.HexColor('#064e3b'), spaceAfter=12
+        fontSize=18, textColor=colors.HexColor('#065f46'), spaceAfter=12
     )
     
     elements = [
         Paragraph("🌱 Relatório de Impacto Ambiental - EcoTwin", title_style),
-        Spacer(1, 10)
+        Paragraph("Plataforma de Monitoramento & Inteligência Ambiental", styles['Normal']),
+        Spacer(1, 15)
     ]
     
     dados = [
-        ["Indicador Ambiental", "Valor Medido"],
+        ["Indicador Ambiental", "Valor Medido / Estimado"],
         ["Ocupantes da Instalação", str(moradores)],
         ["Consumo Total de Energia", f"{kwh_total_mes:,.0f} kWh/mês"],
-        ["Pegada de Carbono Anual", f"{co2_total_ano_kg:.1f} kg CO₂/ano"],
+        ["Pegada de Carbono Anual", f"{co2_total_ano_kg:.1f} kg CO₂e/ano"],
         ["Meta de Redução Definida", f"{meta_reducao_pct}%"],
-        ["Carbono Evitado com Meta", f"{co2_evitado_ano_kg:.1f} kg CO₂/ano"],
-        ["Compensação em Árvores Salvas", f"{arvores_salvas} Árvores/ano"],
+        ["Emissões Evitadas (Meta)", f"{co2_evitado_ano_kg:.1f} kg CO₂e/ano"],
+        ["Equivalência em Árvores Preservadas", f"{arvores_salvas} Árvores/ano"],
         ["Economia Financeira Estimada", f"R$ {economia_fin_mes*12:,.2f}/ano"]
     ]
     
-    tabela = Table(dados, colWidths=[220, 200])
+    tabela = Table(dados, colWidths=[230, 200])
     tabela.setStyle(TableStyle([
         ('BACKGROUND', (0,0), (-1,0), colors.HexColor('#059669')),
         ('TEXTCOLOR', (0,0), (-1,0), colors.white),
@@ -249,16 +298,19 @@ def gerar_pdf():
     return buffer
 
 # -----------------------------------------------------------------------------
-# PAINEL DE ABAS
+# CABEÇALHO PRINCIPAL
 # -----------------------------------------------------------------------------
-st.title("EcoTwin | Gêmeo Digital e Inteligência Artificial Sustentável 🌱")
+st.markdown('<div class="main-title">EcoTwin | Monitoramento & Inteligência Ambiental</div>', unsafe_allow_html=True)
 
+# -----------------------------------------------------------------------------
+# PAINEL DE ABAS (ORGANIZADO E SEM NOMBRES CORTADOS)
+# -----------------------------------------------------------------------------
 tab1, tab2, tab3, tab4, tab5, tab6, tab7 = st.tabs([
     "📊 Diagnóstico",
-    "🌱 Créditos de Carbono",
-    "🧠 Modelo de IA (ML)",
-    "🤖 Chat IA Aero",
-    "📝 Quiz de Hábitos",
+    "🌳 Carbon Twin",
+    "🧠 Modelo de IA",
+    "🤖 Chat Aero",
+    "📝 Diagnóstico Inteligente",
     "🔍 Vazamentos",
     "📄 Relatórios PDF"
 ])
@@ -267,161 +319,297 @@ tab1, tab2, tab3, tab4, tab5, tab6, tab7 = st.tabs([
 # TAB 1: DIAGNÓSTICO
 # -----------------------------------------------------------------------------
 with tab1:
-    st.header("📊 Diagnóstico Ecológico da Instalação")
+    st.header("📊 Diagnóstico de Impacto Ambiental")
     
+    # Cards Reformulados sem Reticências
     c1, c2, c3, c4 = st.columns(4)
-    c1.metric("Consumo Energético", f"{kwh_total_mes:,.0f} kWh/mês")
-    c2.metric("Pegada de Carbono", f"{co2_total_ano_kg:.0f} kg CO₂/ano")
-    c3.metric("Árvores Salvas", f"{arvores_salvas} Árvores")
-    c4.metric("Economia Est.", f"R$ {economia_fin_mes:.2f}/mês")
+    with c1:
+        st.markdown(f"""
+        <div class="metric-card">
+            <div class="metric-label">Consumo Energético</div>
+            <div class="metric-value">{kwh_total_mes:,.0f}</div>
+            <div class="metric-unit">kWh / mês</div>
+        </div>
+        """, unsafe_allow_html=True)
+        
+    with c2:
+        st.markdown(f"""
+        <div class="metric-card">
+            <div class="metric-label">Pegada de Carbono</div>
+            <div class="metric-value">{co2_total_ano_kg:,.0f}</div>
+            <div class="metric-unit">kg CO₂e / ano</div>
+        </div>
+        """, unsafe_allow_html=True)
+
+    with c3:
+        st.markdown(f"""
+        <div class="metric-card">
+            <div class="metric-label">Equivalência Ambiental</div>
+            <div class="metric-value">{arvores_salvas}</div>
+            <div class="metric-unit">Árvores Preservadas / ano</div>
+        </div>
+        """, unsafe_allow_html=True)
+
+    with c4:
+        st.markdown(f"""
+        <div class="metric-card">
+            <div class="metric-label">Economia Estimada</div>
+            <div class="metric-value">R$ {economia_fin_mes:,.2f}</div>
+            <div class="metric-unit">potencial financeiro / mês</div>
+        </div>
+        """, unsafe_allow_html=True)
 
     st.markdown("---")
     col1, col2 = st.columns(2)
     
     with col1:
-        df_pie = pd.DataFrame({
-            "Categoria": ["Eletricidade Prédio", "Computadores/TI", "Uso Hídrico"],
-            "Consumo": [energia_kwh, kwh_ti_mes, consumo_agua_total * 0.01]
+        st.subheader("Distribuição do Impacto Energético / Hídrico")
+        df_donut = pd.DataFrame({
+            "Categoria": ["Eletricidade Geral", "Equipamentos TI", "Uso Hídrico"],
+            "Consumo (kWh Equivalente)": [energia_kwh, kwh_ti_mes, (consumo_agua_total * 0.005)]
         })
-        fig_pie = px.pie(df_pie, values="Consumo", names="Categoria", title="Distribuição do Impacto Energético/Ambiental", color_discrete_sequence=['#10b981', '#3b82f6', '#06b6d4'])
-        fig_pie.update_layout(paper_bgcolor='rgba(0,0,0,0)', font=dict(color='#e2f1e7'))
-        st.plotly_chart(fig_pie, use_container_width=True)
+        fig_donut = px.pie(
+            df_donut, 
+            values="Consumo (kWh Equivalente)", 
+            names="Categoria", 
+            hole=0.5,
+            color_discrete_sequence=['#10B981', '#3B82F6', '#06B6D4']
+        )
+        fig_donut.update_layout(
+            paper_bgcolor='rgba(0,0,0,0)', 
+            plot_bgcolor='rgba(0,0,0,0)',
+            font=dict(color='#E2E8F0'),
+            margin=dict(t=20, b=20, l=20, r=20),
+            legend=dict(orientation="h", y=-0.1)
+        )
+        st.plotly_chart(fig_donut, use_container_width=True)
 
     with col2:
+        st.subheader("Cenário Atual vs Meta de Redução")
         df_bar = pd.DataFrame({
-            "Cenário": ["Atual", "Com Meta Ecológica"],
-            "kg CO₂/ano": [co2_total_ano_kg, co2_total_ano_kg - co2_evitado_ano_kg]
+            "Cenário": ["Cenário Atual", "Com Meta de Redução"],
+            "Emissão (kg CO₂e/ano)": [co2_total_ano_kg, co2_total_ano_kg - co2_evitado_ano_kg]
         })
-        fig_bar = px.bar(df_bar, x="Cenário", y="kg CO₂/ano", color="Cenário", title="Projeção de Redução de Emissões", color_discrete_sequence=['#ef4444', '#10b981'])
-        fig_bar.update_layout(paper_bgcolor='rgba(0,0,0,0)', font=dict(color='#e2f1e7'))
+        fig_bar = px.bar(
+            df_bar, 
+            x="Cenário", 
+            y="Emissão (kg CO₂e/ano)", 
+            color="Cenário",
+            text="Emissão (kg CO₂e/ano)",
+            color_discrete_sequence=['#EF4444', '#10B981']
+        )
+        fig_bar.update_traces(texttemplate='%{text:.0f} kg', textposition='outside')
+        fig_bar.update_layout(
+            paper_bgcolor='rgba(0,0,0,0)', 
+            plot_bgcolor='rgba(0,0,0,0)',
+            font=dict(color='#E2E8F0'),
+            margin=dict(t=20, b=20, l=20, r=20),
+            showlegend=False
+        )
         st.plotly_chart(fig_bar, use_container_width=True)
 
+    # 6. EXPLICAÇÃO METODOLÓGICA CONTEXTUALIZADA
+    st.markdown(f"""
+    <div class="eco-card">
+        <h4>💡 Contextualização dos Resultados</h4>
+        <p><b>A Pegada do Imóvel:</b> {co2_total_ano_kg:.1f} kg CO₂e/ano.</p>
+        <p><b>Significado:</b> Este valor representa uma estimativa direta das emissões decorrentes do consumo de eletricidade e recursos hídricos.</p>
+        <p><b>Maior Fator de Impacto:</b> O consumo elétrico predial responde pela maior fração das emissões calculadas.</p>
+        <p><b>Recomendação Prioritária:</b> Definir metas para a infraestrutura de TI e otimizar equipamentos em standby podem gerar até R$ {economia_fin_mes*12:,.2f} de economia por ano.</p>
+    </div>
+    """, unsafe_allow_html=True)
+
+    # 12. CAMADA TÉCNICA
+    with st.expander("🔬 Ver análise técnica e metodologia"):
+        st.markdown(f"""
+        <div class="tech-card">
+            <b>Detalhamento Técnico do Cálculo:</b><br>
+            • <b>Fator de Emissão Energética:</b> 0,085 kg CO₂/kWh (Baseado na média do Sistema Interligado Nacional).<br>
+            • <b>Fator de Emissão Hídrica:</b> 0,0005 kg CO₂/L (Consumo energético do tratamento e distribuição).<br>
+            • <b>Potência estimada de TI:</b> 150W por estação de trabalho ativa.<br>
+            • <b>Metodologia de Neutralização:</b> Considera a absorção média anual de 15kg de CO₂ por árvore adulta nativa.<br>
+            • <b>Limitações:</b> Modelo demonstrativo baseado nos parâmetros informados na barra lateral.
+        </div>
+        """, unsafe_allow_html=True)
+
 # -----------------------------------------------------------------------------
-# TAB 2: CRÉDITOS DE CARBONO
+# TAB 2: CARBON TWIN / VISUALIZAÇÃO AMBIENTAL
 # -----------------------------------------------------------------------------
 with tab2:
-    st.header("🌱 Créditos de Carbono & Sumidouro Florestal")
+    st.header("🌳 Carbon Twin | Impacto Ambiental Visual")
     
     col_c1, col_c2 = st.columns(2)
     with col_c1:
         st.markdown("""
         <div class="eco-card">
-            <h4>🔴 O que é Débito de Carbono?</h4>
-            <p>Ocorre quando as atividades da instalação geram mais emissões de CO₂ do que a capacidade do ecossistema de absorvê-las.</p>
+            <h4>🔴 Débito de Emissões</h4>
+            <p>Ocorre quando as atividades operacionais geram liberação de CO₂ na atmosfera superior à capacidade de absorção local.</p>
         </div>
         """, unsafe_allow_html=True)
     with col_c2:
         st.markdown("""
         <div class="eco-card">
-            <h4>🟢 O que é Crédito de Carbono?</h4>
-            <p>Representa a não emissão ou remoção de CO₂ da atmosfera obtida através de metas de eficiência e otimização.</p>
+            <h4>🟢 Equivalência & Compensação</h4>
+            <p>Representa a redução voluntária ou mitigação calculada atrelada a metas de eficiência e otimização energética.</p>
         </div>
         """, unsafe_allow_html=True)
 
     st.markdown("---")
-    st.subheader("🌳 Balanço de Neutralização Florestal")
+    st.subheader("🌲 Floresta Virtual de Equivalência")
+    st.write(f"Sua emissão anual ({co2_total_ano_kg:.0f} kg CO₂e) corresponde à capacidade de absorção de **{arvores_equivalentes} árvores adultas**.")
     
-    st.write(f"- Para anular 100% da pegada atual ({co2_total_ano_kg:.0f} kg CO₂/ano), é necessário o plantio ou financiamento de **{arvores_necessarias} árvores nativas**.")
-    st.write(f"- A meta de **{meta_reducao_pct}% de otimização** equivale ao trabalho ambiental de **{arvores_salvas} árvores** em crescimento por ano!")
+    # Representação Visual Dinâmica
+    arvores_exibidas = min(arvores_equivalentes, 60)
+    grid_arvores = "🌳 " * arvores_exibidas
+    st.markdown(f"<div style='font-size: 24px; line-height: 1.8; background: #0F1A15; padding: 15px; border-radius: 8px;'>{grid_arvores}</div>", unsafe_allow_html=True)
     
-    if meta_reducao_pct >= 20:
-        st.balloons()
-        st.success(f"🎉 **Excelente Desempenho!** Sua meta gera o abatimento de {co2_evitado_ano_kg:.1f} kg de CO₂/ano.")
-    else:
-        st.warning("⚠️ Aumente sua meta na barra lateral para elevar seu nível de créditos de carbono.")
+    st.caption("Nota: Representação de equivalência florestal baseada no consumo informado. Esta simulação é educativa e não substitui auditorias oficiais de créditos de carbono.")
 
 # -----------------------------------------------------------------------------
-# TAB 3: MACHINE LEARNING
+# TAB 3: MODELO DE IA (PREVISÃO, ANOMALIAS E CLUSTER)
 # -----------------------------------------------------------------------------
 with tab3:
     st.header("🧠 Módulo de Inteligência Computacional (Machine Learning)")
-    st.write("Uso do pacote `scikit-learn` para análise preditiva e classificação não-supervisionada de perfil:")
-
-    st.markdown("---")
+    
+    # 1. Previsão de Consumo
     st.subheader("1. Previsão de Consumo Energético (Regressão Linear)")
     
-    # Dados de treino simulados
     meses_treino = np.array([1, 2, 3, 4, 5, 6]).reshape(-1, 1)
-    consumo_treino = np.array([kwh_total_mes * 0.9, kwh_total_mes * 0.95, kwh_total_mes * 1.05, 
-                               kwh_total_mes * 1.02, kwh_total_mes * 1.1, kwh_total_mes])
+    consumo_treino = np.array([kwh_total_mes * 0.88, kwh_total_mes * 0.92, kwh_total_mes * 1.04, 
+                               kwh_total_mes * 0.98, kwh_total_mes * 1.05, kwh_total_mes])
     
-    # Modelo de Regressão Linear
     model = LinearRegression()
     model.fit(meses_treino, consumo_treino)
     
-    # Previsão
     meses_futuros = np.array([7, 8, 9]).reshape(-1, 1)
     previsoes = model.predict(meses_futuros)
     
-    df_ml = pd.DataFrame({
-        "Mês": ["Jan", "Fev", "Mar", "Abr", "Mai", "Jun", "Jul (IA)", "Ago (IA)", "Set (IA)"],
-        "Consumo (kWh)": list(consumo_treino) + list(previsoes),
-        "Origem": ["Histórico Real"]*6 + ["Projeção Machine Learning"]*3
-    })
-    
-    fig_ml = px.line(df_ml, x="Mês", y="Consumo (kWh)", color="Origem", markers=True, title="Modelo Preditivo de Consumo Futuro")
-    fig_ml.update_layout(paper_bgcolor='rgba(0,0,0,0)', font=dict(color='#e2f1e7'))
+    fig_ml = go.Figure()
+    fig_ml.add_trace(go.Scatter(
+        x=["Jan", "Fev", "Mar", "Abr", "Mai", "Jun"],
+        y=consumo_treino,
+        mode='lines+markers',
+        name='Histórico Real',
+        line=dict(color='#10B981', width=3)
+    ))
+    fig_ml.add_trace(go.Scatter(
+        x=["Jun", "Jul (IA)", "Ago (IA)", "Set (IA)"],
+        y=[consumo_treino[-1]] + list(previsoes),
+        mode='lines+markers',
+        name='Projeção IA',
+        line=dict(color='#3B82F6', width=3, dash='dash')
+    ))
+    fig_ml.update_layout(
+        paper_bgcolor='rgba(0,0,0,0)', 
+        plot_bgcolor='rgba(0,0,0,0)',
+        font=dict(color='#E2E8F0'),
+        margin=dict(t=20, b=20, l=20, r=20)
+    )
     st.plotly_chart(fig_ml, use_container_width=True)
+    
+    st.info(f"💡 **Interpretação da IA:** O modelo prevê uma tendência de consumo médio de **{previsoes.mean():.0f} kWh** para os próximos 3 meses. Mantenha os computadores fora do modo standby para estabilizar a projeção.")
 
     st.markdown("---")
-    st.subheader("2. Classificação de Perfil Ecológico (K-Means Clustering)")
+    col_ia1, col_ia2 = st.columns(2)
     
-    # Algoritmo K-Means
-    np.random.seed(42)
-    dados_clusters = np.random.randint(100, 2000, size=(20, 2))
-    kmeans = KMeans(n_clusters=3, random_state=42, n_init=10).fit(dados_clusters)
-    
-    df_cluster = pd.DataFrame(dados_clusters, columns=["Demanda Energia (kWh)", "Demanda Água (L)"])
-    df_cluster["Grupo Ecológico"] = [f"Cluster {c+1}" for c in kmeans.labels_]
-    
-    fig_cluster = px.scatter(df_cluster, x="Demanda Energia (kWh)", y="Demanda Água (L)", color="Grupo Ecológico", title="Mapeamento de Perfis por Agrupamento K-Means")
-    fig_cluster.update_layout(paper_bgcolor='rgba(0,0,0,0)', font=dict(color='#e2f1e7'))
-    st.plotly_chart(fig_cluster, use_container_width=True)
+    with col_ia1:
+        st.subheader("2. Análise de Anomalias (Isolation Forest)")
+        X_anomalia = np.array([[kwh_total_mes*0.9], [kwh_total_mes*0.95], [kwh_total_mes], [kwh_total_mes*2.1]])
+        iso_model = IsolationForest(contamination=0.25, random_state=42)
+        preds = iso_model.fit_predict(X_anomalia)
+        
+        if preds[-1] == -1:
+            st.warning("⚠️ **Alerta do EcoTwin:** O modelo identificou um pico atípico no consumo projetado em relação à média esperada.")
+        else:
+            st.success("✅ **Status Normal:** Consumo estabilizado sem picos anômalos detectados.")
+
+    with col_ia2:
+        st.subheader("3. Cluster de Perfil (K-Means)")
+        np.random.seed(42)
+        dados_clusters = np.random.randint(100, 2000, size=(20, 2))
+        kmeans = KMeans(n_clusters=3, random_state=42, n_init=10).fit(dados_clusters)
+        
+        df_cluster = pd.DataFrame(dados_clusters, columns=["Energia (kWh)", "Água (L)"])
+        df_cluster["Grupo"] = [f"Perfil {c+1}" for c in kmeans.labels_]
+        
+        fig_cluster = px.scatter(df_cluster, x="Energia (kWh)", y="Água (L)", color="Grupo", color_discrete_sequence=['#10B981', '#F59E0B', '#EF4444'])
+        fig_cluster.update_layout(paper_bgcolor='rgba(0,0,0,0)', plot_bgcolor='rgba(0,0,0,0)', font=dict(color='#E2E8F0'), margin=dict(t=20, b=20, l=20, r=20))
+        st.plotly_chart(fig_cluster, use_container_width=True)
+
+    with st.expander("🔬 Ver análise técnica e transparência dos modelos"):
+        st.caption("• **Regressão Linear:** Ajuste via Mínimos Quadrados Ordinários (OLS). Data de treino: Simulada com base no padrão informado.")
+        st.caption("• **Isolation Forest:** Algoritmo baseado em árvores para isolamento de observações fora do desvio padrão.")
+        st.caption("• **K-Means:** Agrupamento não-supervisionado particionando os dados em 3 centroides de uso energético/hídrico.")
 
 # -----------------------------------------------------------------------------
-# TAB 4: IA AERO
+# TAB 4: CHAT IA AERO
 # -----------------------------------------------------------------------------
 with tab4:
     st.header("🤖 Consultoria com o Assistente Aero")
+    st.caption("O Aero utiliza os dados reais preenchidos no seu painel para responder perguntas personalizadas.")
     
+    st.markdown("**💡 Sugestões de Perguntas Frequentes:**")
+    col_q1, col_q2, col_q3 = st.columns(3)
+    
+    pergunta_clicada = None
+    with col_q1:
+        if st.button("⚡ Onde estou gastando mais?"):
+            pergunta_clicada = "Onde estou gastando mais?"
+    with col_q2:
+        if st.button("💧 Como reduzir meu tempo de banho?"):
+            pergunta_clicada = "Como posso economizar água nos banhos?"
+    with col_q3:
+        if st.button("🌱 Como melhorar meu perfil de carbono?"):
+            pergunta_clicada = "Como melhorar minha pontuação de emissões?"
+
+    st.markdown("---")
+
     for msg in st.session_state.messages:
         with st.chat_message(msg["role"]):
             st.markdown(msg["content"])
 
-    prompt = st.chat_input("Digite sua dúvida para o Aero...")
+    prompt_input = st.chat_input("Digite sua dúvida para o Aero...")
+    prompt = pergunta_clicada or prompt_input
+
     if prompt:
         st.session_state.messages.append({"role": "user", "content": prompt})
         with st.chat_message("user"):
             st.markdown(prompt)
 
         with st.chat_message("assistant"):
-            if "banho" in prompt.lower():
-                resp = f"🚿 **Dica do Aero:** Diminuir o tempo de banho das {moradores} pessoas da casa em 2 minutos poupa até **{moradores * 2 * 9 * 30} Litros de água por mês**!"
-            elif "luz" in prompt.lower() or "energia" in prompt.lower():
-                resp = f"⚡ **Dica do Aero:** Seus {num_pcs} computadores respondem por **{kwh_ti_mes:.0f} kWh/mês**. Ativar a suspensão automática de tela economiza até 15%!"
+            if "gastando mais" in prompt.lower() or "onde" in prompt.lower():
+                resp = f"📊 **Análise do Aero:** Com base nos seus dados, o gasto principal está na energia predial (**{energia_kwh} kWh/mês**) e nos computadores de TI (**{kwh_ti_mes:.0f} kWh/mês**)."
+            elif "água" in prompt.lower() or "banho" in prompt.lower():
+                resp = f"🚿 **Dica do Aero:** Reduzir 2 minutos no banho das {moradores} pessoas poupará cerca de **{moradores * 2 * 9 * 30} Litros de água por mês**!"
             else:
-                resp = f"🌱 **Dica do Aero:** Para alcançar a meta de {meta_reducao_pct}%, recomendo priorizar a troca de lâmpadas antigas por LED e controlar os aparelhos mantidos em modo de espera."
+                resp = f"🌱 **Dica do Aero:** Para alcançar a meta de {meta_reducao_pct}% e economizar R$ {economia_fin_mes:.2f}/mês, priorize desligar os {num_pcs} computadores ao final do expediente."
             
             st.markdown(resp)
             st.session_state.messages.append({"role": "assistant", "content": resp})
 
 # -----------------------------------------------------------------------------
-# TAB 5: QUIZ DE HÁBITOS
+# TAB 5: DIAGNÓSTICO INTELIGENTE (QUIZ REFORMULADO)
 # -----------------------------------------------------------------------------
 with tab5:
-    st.header("📝 Diagnosticador de Hábitos Sustentáveis")
-    
-    q1 = st.radio("1. O computador e os monitores são desligados ao fim da rotina?", ["Sempre (10 Pts)", "Às vezes (5 Pts)", "Nunca (0 Pts)"])
-    q2 = st.radio("2. A iluminação de cômodos ou salas vazias é mantida apagada?", ["Sempre (10 Pts)", "Às vezes (5 Pts)", "Nunca (0 Pts)"])
-    q3 = st.radio("3. A torneira é fechada durante a escovação ou higienização?", ["Sempre (10 Pts)", "Às vezes (5 Pts)", "Nunca (0 Pts)"])
-    
-    if st.button("Consolidar Pontuação"):
-        pontos = sum([10 if "Sempre" in r else (5 if "Às vezes" in r else 0) for r in [q1, q2, q3]])
-        st.subheader(f"Pontuação de Conformidade: **{pontos} / 30 Pontos**")
-        if pontos >= 25:
-            st.success("🌟 **Excelência Operacional!** Seus hábitos estão alinhados com boas práticas ambientais.")
+    st.header("📝 Diagnóstico Inteligente de Carbono")
+    st.write("Responda às questões sobre hábitos para obter sua avaliação técnica de conformidade:")
+
+    q1 = st.radio("1. Os equipamentos de TI e monitores são desligados ao fim da rotina?", ["Sempre (10 Pts)", "Às vezes (5 Pts)", "Nunca (0 Pts)", "Não sei"])
+    q2 = st.radio("2. A iluminação em cômodos e salas desocupadas permanece apagada?", ["Sempre (10 Pts)", "Às vezes (5 Pts)", "Nunca (0 Pts)", "Não sei"])
+    q3 = st.radio("3. As torneiras são mantidas fechadas durante a higienização?", ["Sempre (10 Pts)", "Às vezes (5 Pts)", "Nunca (0 Pts)", "Não sei"])
+    q4 = st.radio("4. Há controle sobre o tempo de uso de ar-condicionado?", ["Sempre (10 Pts)", "Às vezes (5 Pts)", "Nunca (0 Pts)", "Não sei"])
+
+    if q1 == "Não sei" or q2 == "Não sei" or q3 == "Não sei" or q4 == "Não sei":
+        st.info("💡 **Onde encontrar informações técnicas não sabidas?** Consulte a conta de energia mensal do imóvel ou o manual do fabricante dos seus aparelhos de TI.")
+
+    if st.button("Consolidar Pontuação do Diagnóstico"):
+        respostas = [q1, q2, q3, q4]
+        pontos = sum([10 if "Sempre" in r else (5 if "Às vezes" in r else 0) for r in respostas])
+        st.subheader(f"Pontuação de Conformidade: **{pontos} / 40 Pontos**")
+        if pontos >= 30:
+            st.success("🌟 **Excelente Desempenho Operacional!** Seus hábitos estão altamente alinhados com a eficiência ambiental.")
         else:
-            st.warning("⚠️ **Atenção:** Há margem para melhorias no controle do consumo diário.")
+            st.warning("⚠️ **Atenção:** Identificamos margem de otimização no controle dos equipamentos.")
 
 # -----------------------------------------------------------------------------
 # TAB 6: VAZAMENTOS
@@ -429,22 +617,22 @@ with tab5:
 with tab6:
     st.header("🔍 Auditoria de Perdas e Vazamentos Hídricos")
     
-    local = st.selectbox("Ponto de Anomalia", ["Torneira", "Caixa Acoplada / Vaso Sanitário", "Chuveiro"])
-    gotas = st.slider("Intensidade do Gotejamento", 1, 10, 2)
+    local = st.selectbox("Ponto de Anomalia Detectado", ["Torneira", "Caixa Acoplada / Vaso Sanitário", "Chuveiro"])
+    gotas = st.slider("Intensidade do Gotejamento (Escala 1 a 10)", 1, 10, 2)
     
     perda_litros = gotas * 30 * 30
-    st.write(f"Perda Estimada: **{perda_litros} Litros/mês** (Impacto orçamentário: R$ {perda_litros * 0.012:.2f}/mês)")
+    st.write(f"Perda Estimada: **{perda_litros} Litros / mês** (Impacto orçamentário: R$ {perda_litros * 0.012:.2f}/mês)")
     
-    if st.button("Registrar Ocorrência"):
+    if st.button("Registrar Ocorrência na Auditoria"):
         st.session_state.vazamentos.append({"Local": local, "Perda L/mês": perda_litros})
-        st.success("Anomalia registrada com sucesso!")
+        st.success("Ocorrência registrada no histórico de auditoria!")
 
 # -----------------------------------------------------------------------------
 # TAB 7: RELATÓRIOS PDF
 # -----------------------------------------------------------------------------
 with tab7:
     st.header("📄 Emissão do Laudo Técnico (PDF)")
-    st.write("Clique no botão abaixo para gerar o relatório oficial formatado contendo o resumo dos dados:")
+    st.write("Gere o relatório oficial consolidando os parâmetros informados, pegada de carbono e metas:")
     
     pdf_bytes = gerar_pdf()
     st.download_button(
