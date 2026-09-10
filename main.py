@@ -17,7 +17,7 @@ from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
 from reportlab.lib import colors
 
 # -----------------------------------------------------------------------------
-# CONFIGURAÇÃO DE PÁGINA E ESTILIZAÇÃO CSS (DESIGN VERDE-FLORESTA & MICROANIMAÇÕES)
+# CONFIGURAÇÃO DE PÁGINA E ESTILIZAÇÃO CSS
 # -----------------------------------------------------------------------------
 st.set_page_config(
     page_title="EcoTwin | Monitoramento & Inteligência Ambiental",
@@ -26,7 +26,12 @@ st.set_page_config(
     initial_sidebar_state="expanded"
 )
 
-# Inicializa estado para redirecionamento ao clicar no Aero
+# Gerenciamento de navegação por estado e query params para o clique do Aero
+query_params = st.query_params
+if "nav" in query_params and query_params["nav"] == "aero":
+    st.session_state.active_tab = 3
+    st.query_params.clear()
+
 if "active_tab" not in st.session_state:
     st.session_state.active_tab = 0
 
@@ -75,9 +80,9 @@ st.markdown("""
         border-radius: 6px;
     }
 
-    /* 4. ABAS COMPACTAS COM MICROANIMAÇÕES SUAVES NO HOVER */
+    /* 4. ABAS COM BORDAS ARREDONDADAS E MICROANIMAÇÕES NO HOVER */
     .stTabs [data-baseweb="tab-list"] {
-        gap: 4px;
+        gap: 6px;
         border-bottom: 2px solid #1C3A2D;
         overflow-x: auto;
         white-space: nowrap;
@@ -86,29 +91,31 @@ st.markdown("""
     }
     .stTabs [data-baseweb="tab"] {
         background-color: #152E23;
-        border-radius: 6px 6px 0px 0px;
+        border-radius: 12px 12px 4px 4px !important;
         color: #A7F3D0 !important;
         font-weight: 600;
         font-size: 0.85rem !important;
-        padding: 8px 12px !important;
+        padding: 9px 14px !important;
         border: 1px solid #234737;
         flex-shrink: 0;
         transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
     }
-    /* Microanimação nas Abas */
+    /* Microanimação nas Abas (Hover) */
     .stTabs [data-baseweb="tab"]:hover {
-        transform: translateY(-2px);
+        transform: translateY(-2px) scale(1.01);
         border-color: #34D399;
+        background-color: #1C3A2D;
         color: #FFFFFF !important;
-        box-shadow: 0 4px 10px rgba(16, 185, 129, 0.2);
+        box-shadow: 0 4px 10px rgba(16, 185, 129, 0.25);
     }
     .stTabs [aria-selected="true"] {
         background: linear-gradient(135deg, #059669 0%, #10B981 100%) !important;
         color: #FFFFFF !important;
         border-color: #34D399;
+        border-radius: 12px 12px 4px 4px !important;
     }
 
-    /* 5. CARDS DE RESULTADOS COM MICROANIMAÇÕES SUAVES */
+    /* 5. CARDS DE RESULTADOS COM MICROANIMAÇÕES */
     .metric-card {
         background: #152E23;
         border-radius: 10px;
@@ -187,8 +194,8 @@ st.markdown("""
         box-shadow: 0 4px 12px rgba(16, 185, 129, 0.3);
     }
 
-    /* 6. AERO CLICÁVEL COM TEXTO ORIGINAL RESTAURADO */
-    .aero-widget-container {
+    /* 6. AERO CLICÁVEL REAL ("Olá, sou o Aero") SEM BOTÃO DUPLICADO NO TOPO */
+    .aero-widget-link {
         position: fixed;
         bottom: 20px;
         right: 25px;
@@ -197,9 +204,10 @@ st.markdown("""
         align-items: center;
         gap: 10px;
         cursor: pointer;
+        text-decoration: none !important;
         transition: all 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
     }
-    .aero-widget-container:hover {
+    .aero-widget-link:hover {
         transform: scale(1.05) translateY(-3px);
     }
     .aero-bubble {
@@ -224,36 +232,18 @@ st.markdown("""
         font-size: 22px;
         box-shadow: 0 0 15px rgba(16, 185, 129, 0.5);
     }
-    
-    /* Overlay invisível para capturar o clique exato sobre o elemento flutuante */
-    .aero-click-btn button {
-        position: fixed !important;
-        bottom: 20px !important;
-        right: 25px !important;
-        width: 170px !important;
-        height: 52px !important;
-        opacity: 0 !important;
-        z-index: 10000 !important;
-        cursor: pointer !important;
-    }
     </style>
 """, unsafe_allow_html=True)
 
 # -----------------------------------------------------------------------------
-# WIDGET FLUTUANTE CLICÁVEL DO AERO (TEXTO EXACTO: "Olá, sou o Aero")
+# WIDGET FLUTUANTE CLICÁVEL DO AERO ("Olá, sou o Aero") COM NAVEGAÇÃO REAL
 # -----------------------------------------------------------------------------
 st.markdown("""
-    <div class="aero-widget-container" title="Clique para abrir o Chat Aero">
+    <a href="?nav=aero" target="_self" class="aero-widget-link" title="Clique para abrir o Chat Aero">
         <div class="aero-bubble">Olá, sou o Aero</div>
         <div class="aero-avatar">🤖</div>
-    </div>
+    </a>
 """, unsafe_allow_html=True)
-
-st.markdown('<div class="aero-click-btn">', unsafe_allow_html=True)
-if st.button("Abrir Aero", key="btn_aero_overlay_main"):
-    st.session_state.active_tab = 3  # Posição da aba "🤖 Chat Aero"
-    st.rerun()
-st.markdown('</div>', unsafe_allow_html=True)
 
 # -----------------------------------------------------------------------------
 # GERENCIAMENTO DE ESTADO (SESSION STATE)
@@ -297,7 +287,6 @@ consumo_agua_total = litros_banho_mes + consumo_outro_agua
 kwh_ti_mes = (num_pcs * 0.150 * horas_pcs * 30)
 kwh_total_mes = energia_kwh + kwh_ti_mes
 
-# Fatores de Emissão Utilizados (SIN / Médias Nacionais)
 co2_energia_kg = kwh_total_mes * 0.085
 co2_agua_kg = consumo_agua_total * 0.0005
 co2_total_mes_kg = co2_energia_kg + co2_agua_kg
@@ -305,7 +294,6 @@ co2_total_ano_kg = co2_total_mes_kg * 12
 
 co2_evitado_ano_kg = co2_total_ano_kg * (meta_reducao_pct / 100.0)
 
-# Equivalência ambiental responsável (Aproximadamente 15kg CO2/ano absorvidos por 1 árvore adulta)
 arvores_equivalentes = int(round(co2_total_ano_kg / 15.0))
 arvores_salvas = int(round(co2_evitado_ano_kg / 15.0))
 
@@ -361,7 +349,7 @@ def gerar_pdf():
 st.markdown('<div class="main-title">EcoTwin | Monitoramento & Inteligência Ambiental</div>', unsafe_allow_html=True)
 
 # -----------------------------------------------------------------------------
-# PAINEL DE ABAS (REDERECIONAMENTO DIRETO AO CLICAR NO AERO)
+# PAINEL DE ABAS (COM SELEÇÃO DINÂMICA CONTROLADA PELO CLIQUE DO AERO)
 # -----------------------------------------------------------------------------
 tab_names = [
     "📊 Diagnóstico",
@@ -373,23 +361,14 @@ tab_names = [
     "📄 Relatórios PDF"
 ]
 
+selected_tab = st.session_state.active_tab
 tabs = st.tabs(tab_names)
 tab1, tab2, tab3, tab4, tab5, tab6, tab7 = tabs
 
-# Troca a aba ativa via JS nativo se o gatilho st.session_state.active_tab for ativado
+# Script de redirecionamento imediato caso o clique do Aero tenha acionado o estado
 if st.session_state.active_tab == 3:
-    st.components.v1.html(
-        """
-        <script>
-            var tabButtons = window.parent.document.querySelectorAll('button[data-baseweb="tab"]');
-            if (tabButtons.length > 3) {
-                tabButtons[3].click();
-            }
-        </script>
-        """,
-        height=0
-    )
     st.session_state.active_tab = 0
+    st.rerun()
 
 # -----------------------------------------------------------------------------
 # TAB 1: DIAGNÓSTICO
