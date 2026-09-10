@@ -17,7 +17,7 @@ from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
 from reportlab.lib import colors
 
 # -----------------------------------------------------------------------------
-# CONFIGURAÇÃO DE PÁGINA E ESTILIZAÇÃO CSS (RESPONSIVO E DESIGN SUAVE)
+# CONFIGURAÇÃO DE PÁGINA E ESTILIZAÇÃO CSS (DESIGN VERDE-FLORESTA & MICROANIMAÇÕES)
 # -----------------------------------------------------------------------------
 st.set_page_config(
     page_title="EcoTwin | Monitoramento & Inteligência Ambiental",
@@ -26,16 +26,20 @@ st.set_page_config(
     initial_sidebar_state="expanded"
 )
 
+# Inicializa estado para redirecionamento ao clicar no Aero
+if "active_tab" not in st.session_state:
+    st.session_state.active_tab = 0
+
 st.markdown("""
     <style>
-    /* 1. FUNDO VERDE ESCURO SOFISTICADO (VERDE GRAFITE SUAVE) */
+    /* 1. FUNDO VERDE ESCURO REFINADO (VISIVELMENTE VERDE) */
     .stApp {
-        background-color: #121E19;
+        background-color: #0E231A;
         font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
         color: #ECFDF5 !important;
     }
     
-    /* 2. ADEQUAÇÃO DE TEXTOS E RÓTULOS */
+    /* 2. TEXTOS E RÓTULOS */
     p, span, label, div, li {
         color: #E2E8F0 !important;
     }
@@ -46,7 +50,6 @@ st.markdown("""
         margin-bottom: 0.5rem;
     }
 
-    /* Título Compacto em 1 Linha */
     .main-title {
         font-size: 1.8rem;
         font-weight: 800;
@@ -59,8 +62,8 @@ st.markdown("""
     
     /* 3. BARRA LATERAL (SIDEBAR) */
     [data-testid="stSidebar"] {
-        background-color: #0B1310;
-        border-right: 1px solid #1E293B;
+        background-color: #081610;
+        border-right: 1px solid #1C3A2D;
     }
     [data-testid="stSidebar"] p, [data-testid="stSidebar"] label, [data-testid="stSidebar"] span {
         color: #CBD5E1 !important;
@@ -72,24 +75,28 @@ st.markdown("""
         border-radius: 6px;
     }
 
-    /* 4. ABAS COMPACTAS (SEM CORTAR TEXTO / COM ROLAGEM ELEGANTE) */
+    /* 4. ABAS COMPACTAS E RESPONSIVAS */
     .stTabs [data-baseweb="tab-list"] {
         gap: 4px;
-        border-bottom: 2px solid #1E293B;
+        border-bottom: 2px solid #1C3A2D;
         overflow-x: auto;
         white-space: nowrap;
         flex-wrap: nowrap !important;
         padding-bottom: 4px;
     }
     .stTabs [data-baseweb="tab"] {
-        background-color: #1B2A23;
+        background-color: #152E23;
         border-radius: 6px 6px 0px 0px;
         color: #A7F3D0 !important;
         font-weight: 600;
         font-size: 0.85rem !important;
         padding: 8px 12px !important;
-        border: 1px solid #2D3748;
+        border: 1px solid #234737;
         flex-shrink: 0;
+        transition: all 0.25s ease;
+    }
+    .stTabs [data-baseweb="tab"]:hover {
+        border-color: #34D399;
     }
     .stTabs [aria-selected="true"] {
         background: linear-gradient(135deg, #059669 0%, #10B981 100%) !important;
@@ -97,16 +104,23 @@ st.markdown("""
         border-color: #34D399;
     }
 
-    /* 5. CARDS DE RESULTADOS / MÉTRICAS (SEM POINTO DE RETICÊNCIAS ...) */
+    /* 5. CARDS DE RESULTADOS COM MICROANIMAÇÕES SUAVES DE HOVER */
     .metric-card {
-        background: #182820;
+        background: #152E23;
         border-radius: 10px;
         padding: 14px 16px;
-        border: 1px solid #23382C;
+        border: 1px solid #234737;
         min-height: 95px;
         display: flex;
         flex-direction: column;
         justify-content: center;
+        transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+        box-shadow: 0 4px 6px rgba(0, 0, 0, 0.15);
+    }
+    .metric-card:hover {
+        transform: translateY(-3px);
+        border-color: #34D399;
+        box-shadow: 0 8px 15px rgba(16, 185, 129, 0.2);
     }
     .metric-label {
         font-size: 0.82rem;
@@ -129,18 +143,24 @@ st.markdown("""
         margin-top: 2px;
     }
 
-    /* Cards Informativos e Explicações */
+    /* CARDS INFORMATIVOS COM HOVER SUAVE */
     .eco-card {
-        background: #182820;
+        background: #152E23;
         padding: 18px;
         border-radius: 10px;
         border-left: 4px solid #10B981;
-        border: 1px solid #23382C;
+        border: 1px solid #234737;
         margin-bottom: 15px;
+        transition: all 0.25s ease;
+    }
+    .eco-card:hover {
+        transform: translateY(-2px);
+        border-color: #34D399;
+        box-shadow: 0 6px 12px rgba(16, 185, 129, 0.15);
     }
     
     .tech-card {
-        background: #0F1A15;
+        background: #0A1C14;
         padding: 15px;
         border-radius: 8px;
         border: 1px dashed #34D399;
@@ -148,7 +168,7 @@ st.markdown("""
         font-size: 0.88rem;
     }
 
-    /* Botões */
+    /* BOTÕES COM ANIMAÇÃO */
     .stButton>button {
         background: linear-gradient(135deg, #059669 0%, #10B981 100%);
         color: #FFFFFF !important;
@@ -156,10 +176,15 @@ st.markdown("""
         border: none;
         padding: 0.5rem 1rem;
         font-weight: 600;
+        transition: all 0.2s ease;
+    }
+    .stButton>button:hover {
+        transform: translateY(-1px);
+        box-shadow: 0 4px 12px rgba(16, 185, 129, 0.3);
     }
 
-    /* Widget IA Aero */
-    .aero-widget {
+    /* 6. AERO CLICÁVEL & MICROANIMAÇÃO */
+    .aero-widget-container {
         position: fixed;
         bottom: 20px;
         right: 25px;
@@ -167,6 +192,11 @@ st.markdown("""
         display: flex;
         align-items: center;
         gap: 10px;
+        cursor: pointer;
+        transition: all 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+    }
+    .aero-widget-container:hover {
+        transform: scale(1.06) translateY(-4px);
     }
     .aero-bubble {
         background: #FFFFFF;
@@ -179,8 +209,8 @@ st.markdown("""
         border: 2px solid #10B981;
     }
     .aero-avatar {
-        width: 46px;
-        height: 46px;
+        width: 48px;
+        height: 48px;
         background: linear-gradient(135deg, #059669 0%, #10B981 100%);
         border: 2px solid #A7F3D0;
         border-radius: 50%;
@@ -188,14 +218,38 @@ st.markdown("""
         align-items: center;
         justify-content: center;
         font-size: 22px;
+        box-shadow: 0 0 15px rgba(16, 185, 129, 0.5);
+    }
+    
+    /* Botão invisível sobre o Aero para capturar o clique no Streamlit */
+    .aero-click-btn button {
+        position: fixed !important;
+        bottom: 20px !important;
+        right: 25px !important;
+        width: 180px !important;
+        height: 50px !important;
+        opacity: 0 !important;
+        z-index: 10000 !important;
+        cursor: pointer !important;
     }
     </style>
+""", unsafe_allow_html=True)
 
-    <div class="aero-widget">
-        <div class="aero-bubble">👋 Olá! Sou o Aero</div>
+# -----------------------------------------------------------------------------
+# WIDGET FLUTUANTE CLICÁVEL DO AERO
+# -----------------------------------------------------------------------------
+st.markdown("""
+    <div class="aero-widget-container" title="Clique para abrir o Chat Aero">
+        <div class="aero-bubble">💬 Clique aqui para abrir o Aero</div>
         <div class="aero-avatar">🤖</div>
     </div>
 """, unsafe_allow_html=True)
+
+st.markdown('<div class="aero-click-btn">', unsafe_allow_html=True)
+if st.button("Abrir Chat Aero", key="btn_aero_overlay"):
+    st.session_state.active_tab = 3  # Índice da aba "🤖 Chat Aero"
+    st.rerun()
+st.markdown('</div>', unsafe_allow_html=True)
 
 # -----------------------------------------------------------------------------
 # GERENCIAMENTO DE ESTADO (SESSION STATE)
@@ -303,9 +357,9 @@ def gerar_pdf():
 st.markdown('<div class="main-title">EcoTwin | Monitoramento & Inteligência Ambiental</div>', unsafe_allow_html=True)
 
 # -----------------------------------------------------------------------------
-# PAINEL DE ABAS (ORGANIZADO E SEM NOMBRES CORTADOS)
+# PAINEL DE ABAS (INTEGRADO COM DIRECIONAMENTO DO AERO)
 # -----------------------------------------------------------------------------
-tab1, tab2, tab3, tab4, tab5, tab6, tab7 = st.tabs([
+tab_names = [
     "📊 Diagnóstico",
     "🌳 Carbon Twin",
     "🧠 Modelo de IA",
@@ -313,7 +367,26 @@ tab1, tab2, tab3, tab4, tab5, tab6, tab7 = st.tabs([
     "📝 Diagnóstico Inteligente",
     "🔍 Vazamentos",
     "📄 Relatórios PDF"
-])
+]
+
+# Exibe as abas mantendo o estado de seleção ativo do Aero
+tabs = st.tabs(tab_names)
+tab1, tab2, tab3, tab4, tab5, tab6, tab7 = tabs
+
+# Script JS discreto para trocar a aba visualmente se o usuário clicou no Aero
+if st.session_state.active_tab == 3:
+    st.components.v1.html(
+        """
+        <script>
+            var tabs = window.parent.document.querySelectorAll('button[data-baseweb="tab"]');
+            if (tabs.length > 3) {
+                tabs[3].click();
+            }
+        </script>
+        """,
+        height=0
+    )
+    st.session_state.active_tab = 0  # Reseta o gatilho
 
 # -----------------------------------------------------------------------------
 # TAB 1: DIAGNÓSTICO
@@ -321,7 +394,6 @@ tab1, tab2, tab3, tab4, tab5, tab6, tab7 = st.tabs([
 with tab1:
     st.header("📊 Diagnóstico de Impacto Ambiental")
     
-    # Cards Reformulados sem Reticências
     c1, c2, c3, c4 = st.columns(4)
     with c1:
         st.markdown(f"""
@@ -408,7 +480,6 @@ with tab1:
         )
         st.plotly_chart(fig_bar, use_container_width=True)
 
-    # 6. EXPLICAÇÃO METODOLÓGICA CONTEXTUALIZADA
     st.markdown(f"""
     <div class="eco-card">
         <h4>💡 Contextualização dos Resultados</h4>
@@ -419,7 +490,6 @@ with tab1:
     </div>
     """, unsafe_allow_html=True)
 
-    # 12. CAMADA TÉCNICA
     with st.expander("🔬 Ver análise técnica e metodologia"):
         st.markdown(f"""
         <div class="tech-card">
@@ -458,10 +528,9 @@ with tab2:
     st.subheader("🌲 Floresta Virtual de Equivalência")
     st.write(f"Sua emissão anual ({co2_total_ano_kg:.0f} kg CO₂e) corresponde à capacidade de absorção de **{arvores_equivalentes} árvores adultas**.")
     
-    # Representação Visual Dinâmica
     arvores_exibidas = min(arvores_equivalentes, 60)
     grid_arvores = "🌳 " * arvores_exibidas
-    st.markdown(f"<div style='font-size: 24px; line-height: 1.8; background: #0F1A15; padding: 15px; border-radius: 8px;'>{grid_arvores}</div>", unsafe_allow_html=True)
+    st.markdown(f"<div style='font-size: 24px; line-height: 1.8; background: #0A1C14; padding: 15px; border-radius: 8px; border: 1px solid #234737;'>{grid_arvores}</div>", unsafe_allow_html=True)
     
     st.caption("Nota: Representação de equivalência florestal baseada no consumo informado. Esta simulação é educativa e não substitui auditorias oficiais de créditos de carbono.")
 
@@ -471,7 +540,6 @@ with tab2:
 with tab3:
     st.header("🧠 Módulo de Inteligência Computacional (Machine Learning)")
     
-    # 1. Previsão de Consumo
     st.subheader("1. Previsão de Consumo Energético (Regressão Linear)")
     
     meses_treino = np.array([1, 2, 3, 4, 5, 6]).reshape(-1, 1)
@@ -588,7 +656,7 @@ with tab4:
             st.session_state.messages.append({"role": "assistant", "content": resp})
 
 # -----------------------------------------------------------------------------
-# TAB 5: DIAGNÓSTICO INTELIGENTE (QUIZ REFORMULADO)
+# TAB 5: DIAGNÓSTICO INTELIGENTE
 # -----------------------------------------------------------------------------
 with tab5:
     st.header("📝 Diagnóstico Inteligente de Carbono")
