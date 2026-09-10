@@ -32,7 +32,7 @@ if "active_tab" not in st.session_state:
 
 st.markdown("""
     <style>
-    /* 1. FUNDO VERDE ESCURO REFINADO (VISIVELMENTE VERDE) */
+    /* 1. FUNDO VERDE ESCURO REFINADO */
     .stApp {
         background-color: #0E231A;
         font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
@@ -75,7 +75,7 @@ st.markdown("""
         border-radius: 6px;
     }
 
-    /* 4. ABAS COMPACTAS E RESPONSIVAS */
+    /* 4. ABAS COMPACTAS COM MICROANIMAÇÕES SUAVES NO HOVER */
     .stTabs [data-baseweb="tab-list"] {
         gap: 4px;
         border-bottom: 2px solid #1C3A2D;
@@ -93,10 +93,14 @@ st.markdown("""
         padding: 8px 12px !important;
         border: 1px solid #234737;
         flex-shrink: 0;
-        transition: all 0.25s ease;
+        transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
     }
+    /* Microanimação nas Abas */
     .stTabs [data-baseweb="tab"]:hover {
+        transform: translateY(-2px);
         border-color: #34D399;
+        color: #FFFFFF !important;
+        box-shadow: 0 4px 10px rgba(16, 185, 129, 0.2);
     }
     .stTabs [aria-selected="true"] {
         background: linear-gradient(135deg, #059669 0%, #10B981 100%) !important;
@@ -104,7 +108,7 @@ st.markdown("""
         border-color: #34D399;
     }
 
-    /* 5. CARDS DE RESULTADOS COM MICROANIMAÇÕES SUAVES DE HOVER */
+    /* 5. CARDS DE RESULTADOS COM MICROANIMAÇÕES SUAVES */
     .metric-card {
         background: #152E23;
         border-radius: 10px;
@@ -183,7 +187,7 @@ st.markdown("""
         box-shadow: 0 4px 12px rgba(16, 185, 129, 0.3);
     }
 
-    /* 6. AERO CLICÁVEL & MICROANIMAÇÃO */
+    /* 6. AERO CLICÁVEL COM TEXTO ORIGINAL RESTAURADO */
     .aero-widget-container {
         position: fixed;
         bottom: 20px;
@@ -196,15 +200,15 @@ st.markdown("""
         transition: all 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
     }
     .aero-widget-container:hover {
-        transform: scale(1.06) translateY(-4px);
+        transform: scale(1.05) translateY(-3px);
     }
     .aero-bubble {
         background: #FFFFFF;
         color: #0F172A !important;
-        padding: 8px 12px;
+        padding: 8px 14px;
         border-radius: 12px 12px 2px 12px;
         font-weight: 700;
-        font-size: 12px;
+        font-size: 13px;
         box-shadow: 0 4px 12px rgba(0,0,0,0.4);
         border: 2px solid #10B981;
     }
@@ -221,13 +225,13 @@ st.markdown("""
         box-shadow: 0 0 15px rgba(16, 185, 129, 0.5);
     }
     
-    /* Botão invisível sobre o Aero para capturar o clique no Streamlit */
+    /* Overlay invisível para capturar o clique exato sobre o elemento flutuante */
     .aero-click-btn button {
         position: fixed !important;
         bottom: 20px !important;
         right: 25px !important;
-        width: 180px !important;
-        height: 50px !important;
+        width: 170px !important;
+        height: 52px !important;
         opacity: 0 !important;
         z-index: 10000 !important;
         cursor: pointer !important;
@@ -236,18 +240,18 @@ st.markdown("""
 """, unsafe_allow_html=True)
 
 # -----------------------------------------------------------------------------
-# WIDGET FLUTUANTE CLICÁVEL DO AERO
+# WIDGET FLUTUANTE CLICÁVEL DO AERO (TEXTO EXACTO: "Olá, sou o Aero")
 # -----------------------------------------------------------------------------
 st.markdown("""
     <div class="aero-widget-container" title="Clique para abrir o Chat Aero">
-        <div class="aero-bubble">💬 Clique aqui para abrir o Aero</div>
+        <div class="aero-bubble">Olá, sou o Aero</div>
         <div class="aero-avatar">🤖</div>
     </div>
 """, unsafe_allow_html=True)
 
 st.markdown('<div class="aero-click-btn">', unsafe_allow_html=True)
-if st.button("Abrir Chat Aero", key="btn_aero_overlay"):
-    st.session_state.active_tab = 3  # Índice da aba "🤖 Chat Aero"
+if st.button("Abrir Aero", key="btn_aero_overlay_main"):
+    st.session_state.active_tab = 3  # Posição da aba "🤖 Chat Aero"
     st.rerun()
 st.markdown('</div>', unsafe_allow_html=True)
 
@@ -357,7 +361,7 @@ def gerar_pdf():
 st.markdown('<div class="main-title">EcoTwin | Monitoramento & Inteligência Ambiental</div>', unsafe_allow_html=True)
 
 # -----------------------------------------------------------------------------
-# PAINEL DE ABAS (INTEGRADO COM DIRECIONAMENTO DO AERO)
+# PAINEL DE ABAS (REDERECIONAMENTO DIRETO AO CLICAR NO AERO)
 # -----------------------------------------------------------------------------
 tab_names = [
     "📊 Diagnóstico",
@@ -369,24 +373,23 @@ tab_names = [
     "📄 Relatórios PDF"
 ]
 
-# Exibe as abas mantendo o estado de seleção ativo do Aero
 tabs = st.tabs(tab_names)
 tab1, tab2, tab3, tab4, tab5, tab6, tab7 = tabs
 
-# Script JS discreto para trocar a aba visualmente se o usuário clicou no Aero
+# Troca a aba ativa via JS nativo se o gatilho st.session_state.active_tab for ativado
 if st.session_state.active_tab == 3:
     st.components.v1.html(
         """
         <script>
-            var tabs = window.parent.document.querySelectorAll('button[data-baseweb="tab"]');
-            if (tabs.length > 3) {
-                tabs[3].click();
+            var tabButtons = window.parent.document.querySelectorAll('button[data-baseweb="tab"]');
+            if (tabButtons.length > 3) {
+                tabButtons[3].click();
             }
         </script>
         """,
         height=0
     )
-    st.session_state.active_tab = 0  # Reseta o gatilho
+    st.session_state.active_tab = 0
 
 # -----------------------------------------------------------------------------
 # TAB 1: DIAGNÓSTICO
