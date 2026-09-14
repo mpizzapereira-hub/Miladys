@@ -31,21 +31,24 @@ function nextStep(stepNum) {
 }
 function prevStep(stepNum) { nextStep(stepNum); }
 
-document.getElementById('inp-energia').addEventListener('input', e => {
-    document.getElementById('val-energia').innerText = e.target.value + " kWh";
-});
+const inpEnergiaEl = document.getElementById('inp-energia');
+if (inpEnergiaEl) {
+    inpEnergiaEl.addEventListener('input', e => {
+        document.getElementById('val-energia').innerText = e.target.value + " kWh";
+    });
+}
 
 // Finaliza Quiz Inicial e Inicializa Todo o Dashboard
 function finalizarQuiz() {
-    state.moradores = parseInt(document.getElementById('inp-moradores').value);
-    state.energia_kwh = parseInt(document.getElementById('inp-energia').value);
+    state.moradores = parseInt(document.getElementById('inp-moradores').value) || 4;
+    state.energia_kwh = parseInt(document.getElementById('inp-energia').value) || 220;
     
     showScreen('screen-loading');
     setTimeout(() => {
         showScreen('screen-dashboard');
         initDashboard();
         gerarQRCode();
-    }, 1400);
+    }, 1200);
 }
 
 // Navegação das 8 Abas
@@ -68,10 +71,18 @@ function openTab(tabId) {
     if(tabId === 'tab-diag' && chartDonut) chartDonut.update();
     if(tabId === 'tab-diag' && chartBar) chartBar.update();
     if(tabId === 'tab-ia' && chartML) chartML.update();
+
+    // Se abrir a aba do Carbon Twin, inicializa/redimensiona o Three.js
+    if (tabId === 'tab-twin') {
+        setTimeout(() => {
+            initThreeFarm();
+            onWindowResize();
+        }, 100);
+    }
 }
 
 // =============================================================================
-// INICIALIZAÇÃO DO DASHBOARD E GRÁFICOS
+// INICIALIZAÇÃO DO DASHBOARD E GRÁFICOS (CHART.JS)
 // =============================================================================
 let chartDonut, chartBar, chartML;
 
@@ -88,109 +99,126 @@ function initDashboard() {
 
     // Rank Badge
     const badge = document.getElementById('rank-badge');
-    if (state.co2 > 1000) { 
-        badge.innerText = "🚨 Alerta Vermelho"; 
-        badge.style.backgroundColor = "#EF4444"; 
-    } else if (state.co2 > 500) { 
-        badge.innerText = "⚖️ Consumidor Mediano"; 
-        badge.style.backgroundColor = "#F59E0B"; 
-    } else { 
-        badge.innerText = "🌟 Herói Verde"; 
-        badge.style.backgroundColor = "#10B981"; 
+    if (badge) {
+        if (state.co2 > 1000) { 
+            badge.innerText = "🚨 Alerta Vermelho"; 
+            badge.style.backgroundColor = "#EF4444"; 
+        } else if (state.co2 > 500) { 
+            badge.innerText = "⚖️ Consumidor Mediano"; 
+            badge.style.backgroundColor = "#F59E0B"; 
+        } else { 
+            badge.innerText = "🌟 Herói Verde"; 
+            badge.style.backgroundColor = "#10B981"; 
+        }
     }
 
     // Gráficos Chart.js
-    Chart.defaults.color = '#E2E8F0';
-    
-    if(!chartDonut) {
-        chartDonut = new Chart(document.getElementById('chart-donut'), {
-            type: 'doughnut',
-            data: { 
-                labels: ["Eletricidade Geral", "Transporte & Rotina", "Resíduos & Gás"], 
-                datasets: [{ 
-                    data: [co2_energia, state.co2 * 0.35, state.co2 * 0.20], 
-                    backgroundColor: ['#10B981', '#3B82F6', '#F59E0B'], 
-                    borderWidth: 0 
-                }] 
-            },
-            options: { responsive: true, plugins: { legend: { position: 'bottom' } } }
-        });
-    } else {
-        chartDonut.data.datasets[0].data = [co2_energia, state.co2 * 0.35, state.co2 * 0.20];
-        chartDonut.update();
+    if (typeof Chart !== 'undefined') {
+        Chart.defaults.color = '#E2E8F0';
+        
+        const donutCtx = document.getElementById('chart-donut');
+        if (donutCtx && !chartDonut) {
+            chartDonut = new Chart(donutCtx, {
+                type: 'doughnut',
+                data: { 
+                    labels: ["Eletricidade Geral", "Transporte & Rotina", "Resíduos & Gás"], 
+                    datasets: [{ 
+                        data: [co2_energia, state.co2 * 0.35, state.co2 * 0.20], 
+                        backgroundColor: ['#10B981', '#3B82F6', '#F59E0B'], 
+                        borderWidth: 0 
+                    }] 
+                },
+                options: { responsive: true, plugins: { legend: { position: 'bottom' } } }
+            });
+        } else if (chartDonut) {
+            chartDonut.data.datasets[0].data = [co2_energia, state.co2 * 0.35, state.co2 * 0.20];
+            chartDonut.update();
+        }
+
+        const barCtx = document.getElementById('chart-bar');
+        if (barCtx && !chartBar) {
+            chartBar = new Chart(barCtx, {
+                type: 'bar',
+                data: { 
+                    labels: ["Cenário Atual", "Meta (-15%)"], 
+                    datasets: [{ 
+                        label: 'Pegada CO₂e/ano', 
+                        data: [state.co2, meta_red], 
+                        backgroundColor: ['#EF4444', '#10B981'] 
+                    }] 
+                },
+                options: { responsive: true, plugins: { legend: { display: false } } }
+            });
+        } else if (chartBar) {
+            chartBar.data.datasets[0].data = [state.co2, meta_red];
+            chartBar.update();
+        }
+
+        // Tab 4: Modelo de IA (Projeção Linear)
+        const hist = [
+            state.energia_kwh * 0.90, 
+            state.energia_kwh * 0.94, 
+            state.energia_kwh * 1.04, 
+            state.energia_kwh * 0.97, 
+            state.energia_kwh * 1.03, 
+            state.energia_kwh * 1.00
+        ];
+        const avg = hist.reduce((a,b)=>a+b)/6;
+        const mlCtx = document.getElementById('chart-ml');
+        if (mlCtx && !chartML) {
+            chartML = new Chart(mlCtx, {
+                type: 'line',
+                data: {
+                    labels: ["Jan", "Fev", "Mar", "Abr", "Mai", "Jun", "Jul (IA)", "Ago (IA)", "Set (IA)"],
+                    datasets: [
+                        { 
+                            label: 'Histórico Real', 
+                            data: hist.concat([null, null, null]), 
+                            borderColor: '#10B981', 
+                            backgroundColor: '#10B981', 
+                            tension: 0.15 
+                        },
+                        { 
+                            label: 'Projeção Inteligente (IA)', 
+                            data: [null, null, null, null, null, state.energia_kwh, avg*1.01, avg*1.02, avg*1.03], 
+                            borderColor: '#3B82F6', 
+                            backgroundColor: '#3B82F6', 
+                            borderDash: [5, 5], 
+                            tension: 0.15 
+                        }
+                    ]
+                },
+                options: { responsive: true }
+            });
+            const iaAlert = document.getElementById('ia-alert');
+            if (iaAlert) {
+                iaAlert.innerHTML = `💡 <strong>Previsão de IA:</strong> A tendência aponta um consumo estabilizado em torno de <strong>${avg.toFixed(0)} kWh/mês</strong>. Mantenha aparelhos desligados fora do expediente.`;
+            }
+        }
     }
 
-    if(!chartBar) {
-        chartBar = new Chart(document.getElementById('chart-bar'), {
-            type: 'bar',
-            data: { 
-                labels: ["Cenário Atual", "Meta (-15%)"], 
-                datasets: [{ 
-                    label: 'Pegada CO₂e/ano', 
-                    data: [state.co2, meta_red], 
-                    backgroundColor: ['#EF4444', '#10B981'] 
-                }] 
-            },
-            options: { responsive: true, plugins: { legend: { display: false } } }
-        });
-    } else {
-        chartBar.data.datasets[0].data = [state.co2, meta_red];
-        chartBar.update();
-    }
-
-    // Tab 3: Inicializa Simulador de Plantio e Fazendinha 3D
+    // Inicializa Simulador de Plantio e Fazendinha 3D
     updPlantio();
 
-    // Tab 4: Modelo de IA (Projeção Linear)
-    const hist = [
-        state.energia_kwh * 0.90, 
-        state.energia_kwh * 0.94, 
-        state.energia_kwh * 1.04, 
-        state.energia_kwh * 0.97, 
-        state.energia_kwh * 1.03, 
-        state.energia_kwh * 1.00
-    ];
-    const avg = hist.reduce((a,b)=>a+b)/6;
-    if(!chartML) {
-        chartML = new Chart(document.getElementById('chart-ml'), {
-            type: 'line',
-            data: {
-                labels: ["Jan", "Fev", "Mar", "Abr", "Mai", "Jun", "Jul (IA)", "Ago (IA)", "Set (IA)"],
-                datasets: [
-                    { 
-                        label: 'Histórico Real', 
-                        data: hist.concat([null, null, null]), 
-                        borderColor: '#10B981', 
-                        backgroundColor: '#10B981', 
-                        tension: 0.15 
-                    },
-                    { 
-                        label: 'Projeção Inteligente (IA)', 
-                        data: [null, null, null, null, null, state.energia_kwh, avg*1.01, avg*1.02, avg*1.03], 
-                        borderColor: '#3B82F6', 
-                        backgroundColor: '#3B82F6', 
-                        borderDash: [5, 5], 
-                        tension: 0.15 
-                    }
-                ]
-            },
-            options: { responsive: true }
-        });
-        document.getElementById('ia-alert').innerHTML = `💡 <strong>Previsão de IA:</strong> A tendência aponta um consumo estabilizado em torno de <strong>${avg.toFixed(0)} kWh/mês</strong>. Mantenha aparelhos desligados em horários de pico.`;
-    }
-
-    // Tab 2: Inicializa Calculadora Pessoal
+    // Inicializa Calculadora Pessoal
     updCalc();
+
+    // Inicializa Three.js se o container estiver pronto
+    setTimeout(initThreeFarm, 150);
 }
 
 function animateValue(id, start, end, duration) {
-    if (start === end) return;
+    const obj = document.getElementById(id);
+    if (!obj) return;
+    if (start === end) {
+        obj.innerHTML = end.toLocaleString('pt-BR');
+        return;
+    }
     let range = end - start;
     let current = start;
     let increment = end > start ? 1 : -1;
     let stepTime = Math.abs(Math.floor(duration / range));
     if (stepTime < 10) stepTime = 10;
-    const obj = document.getElementById(id);
     let timer = setInterval(function() {
         current += increment * Math.ceil(Math.abs(range) / (duration / stepTime));
         if ((increment > 0 && current >= end) || (increment < 0 && current <= end)) {
@@ -205,15 +233,20 @@ function animateValue(id, start, end, duration) {
 // ABA 2: CALCULADORA DE IMPACTO PESSOAL
 // =============================================================================
 function updCalc() {
-    state.calc_banho = parseInt(document.getElementById('calc-banho').value);
-    state.calc_carne = parseInt(document.getElementById('calc-carne').value);
-    state.calc_lixo = parseInt(document.getElementById('calc-lixo').value);
-    state.calc_transp = parseInt(document.getElementById('calc-transp').value);
+    const bEl = document.getElementById('calc-banho');
+    const cEl = document.getElementById('calc-carne');
+    const lEl = document.getElementById('calc-lixo');
+    const tEl = document.getElementById('calc-transp');
 
-    document.getElementById('v-banho').innerText = state.calc_banho;
-    document.getElementById('v-carne').innerText = state.calc_carne;
-    document.getElementById('v-lixo').innerText = state.calc_lixo;
-    document.getElementById('v-transp').innerText = state.calc_transp;
+    if (bEl) state.calc_banho = parseInt(bEl.value);
+    if (cEl) state.calc_carne = parseInt(cEl.value);
+    if (lEl) state.calc_lixo = parseInt(lEl.value);
+    if (tEl) state.calc_transp = parseInt(tEl.value);
+
+    if (document.getElementById('v-banho')) document.getElementById('v-banho').innerText = state.calc_banho;
+    if (document.getElementById('v-carne')) document.getElementById('v-carne').innerText = state.calc_carne;
+    if (document.getElementById('v-lixo')) document.getElementById('v-lixo').innerText = state.calc_lixo;
+    if (document.getElementById('v-transp')) document.getElementById('v-transp').innerText = state.calc_transp;
 
     // Médias Brasileiras
     renderDelta('d-banho', state.calc_banho, 12, 'min');
@@ -224,6 +257,7 @@ function updCalc() {
 
 function renderDelta(id, val, media, unit) {
     const el = document.getElementById(id);
+    if (!el) return;
     const diff = val - media;
     if (diff > 0) {
         el.innerHTML = `<span class="delta-bad">▲ +${diff} ${unit} vs Média BR (${media} ${unit})</span>`;
@@ -235,88 +269,100 @@ function renderDelta(id, val, media, unit) {
 }
 
 // =============================================================================
-// ABA 3: CARBON TWIN, SIMULADOR DE PLANTIO & FAZENDINHA 3D
+// ABA 3: CARBON TWIN — SIMULADOR DE PLANTIO, 3D WEBGL & BIOMA FLORESTAL
 // =============================================================================
 function updPlantio() {
-    const area = parseInt(document.getElementById('inp-area-plantio').value);
-    state.area_plantio = area;
-    document.getElementById('val-area-plantio').innerText = area + " m²";
+    const inpArea = document.getElementById('inp-area-plantio');
+    if (inpArea) {
+        state.area_plantio = parseInt(inpArea.value);
+    }
+    const valArea = document.getElementById('val-area-plantio');
+    if (valArea) {
+        valArea.innerText = state.area_plantio + " m²";
+    }
 
-    // 1 árvore adulta nativa precisa de ~12m²
-    state.mudas_capacidade = Math.floor(area / 12);
+    // 1 árvore adulta nativa requer cerca de 12 m²
+    state.mudas_capacidade = Math.floor(state.area_plantio / 12);
     state.mudas_absorcao = state.mudas_capacidade * 15;
     const cobertura = state.co2 > 0 ? Math.min(100, Math.round((state.mudas_absorcao / state.co2) * 100)) : 100;
 
-    document.getElementById('out-mudas-capacidade').innerText = state.mudas_capacidade;
-    document.getElementById('out-mudas-absorcao').innerText = state.mudas_absorcao.toLocaleString('pt-BR');
-    document.getElementById('out-mudas-cobertura').innerText = cobertura + "%";
+    if (document.getElementById('out-mudas-capacidade')) document.getElementById('out-mudas-capacidade').innerText = state.mudas_capacidade;
+    if (document.getElementById('out-mudas-absorcao')) document.getElementById('out-mudas-absorcao').innerText = state.mudas_absorcao.toLocaleString('pt-BR');
+    if (document.getElementById('out-mudas-cobertura')) document.getElementById('out-mudas-cobertura').innerText = cobertura + "%";
 
-    // Evolução Dinâmica da Fazendinha 3D
+    // Evolução Dinâmica dos Módulos da Fazendinha
     const container = document.getElementById('farm-grid-elements');
     const badgeNivel = document.getElementById('farm-badge-nivel');
-    container.innerHTML = '';
+    if (container && badgeNivel) {
+        container.innerHTML = '';
 
-    let elementos = [];
-    if (area >= 1200 || cobertura >= 70) {
-        state.nivel_fazenda = "Nível 4: Oásis Regenerativo Sustentável (Ouro)";
-        badgeNivel.innerText = state.nivel_fazenda;
-        badgeNivel.style.background = "linear-gradient(135deg, #059669 0%, #10B981 100%)";
-        elementos = [
-            { emoji: "☀️", nome: "Energia Solar", desc: "Painéis Fotovoltaicos" },
-            { emoji: "🌳", nome: "Mata Nativa", desc: "Dossel e Sombra" },
-            { emoji: "🍎", nome: "Pomar Frutífero", desc: "Alimento Orgânico" },
-            { emoji: "🐝", nome: "Apiário de Abelhas", desc: "Polinização Ativa" },
-            { emoji: "💧", nome: "Cisterna Pluvial", desc: "Reúso de Chuva" },
-            { emoji: "🌽", nome: "Agrofloresta", desc: "Milho & Consórcios" },
-            { emoji: "🐑", nome: "Pasto Rotativo", desc: "Zero Carbono" },
-            { emoji: "🏡", nome: "Eco-Casa", desc: "Design Bioclimático" }
-        ];
-    } else if (area >= 600 || cobertura >= 40) {
-        state.nivel_fazenda = "Nível 3: Fazenda Agroecológica em Transição (Prata)";
-        badgeNivel.innerText = state.nivel_fazenda;
-        badgeNivel.style.background = "linear-gradient(135deg, #2563EB 0%, #3B82F6 100%)";
-        elementos = [
-            { emoji: "🌳", nome: "Árvores Nativas", desc: "Absorção Contínua" },
-            { emoji: "🍊", nome: "Citros & Frutas", desc: "Pomar Jovem" },
-            { emoji: "🥕", nome: "Horta Familiar", desc: "Cultivo Local" },
-            { emoji: "🐔", nome: "Aves Livres", desc: "Manejo Ecológico" },
-            { emoji: "💧", nome: "Poço Sustentável", desc: "Água Eficiente" },
-            { emoji: "🌾", nome: "Solo Protegido", desc: "Cobertura Verde" }
-        ];
-    } else if (area >= 180) {
-        state.nivel_fazenda = "Nível 2: Sítio em Desenvolvimento Verde (Bronze)";
-        badgeNivel.innerText = state.nivel_fazenda;
-        badgeNivel.style.background = "linear-gradient(135deg, #D97706 0%, #F59E0B 100%)";
-        elementos = [
-            { emoji: "🌱", nome: "Mudas em Crescimento", desc: "Início do Plantio" },
-            { emoji: "🌾", nome: "Solo em Recuperação", desc: "Adubação Verde" },
-            { emoji: "🍎", nome: "Árvores Iniciais", desc: "Raízes Fortes" },
-            { emoji: "💧", nome: "Irrigação Gota", desc: "Zero Desperdício" }
-        ];
-    } else {
-        state.nivel_fazenda = "Nível 1: Solo Inicial em Recuperação";
-        badgeNivel.innerText = state.nivel_fazenda;
-        badgeNivel.style.background = "linear-gradient(135deg, #4B5563 0%, #6B7280 100%)";
-        elementos = [
-            { emoji: "🌱", nome: "Primeiros Brotos", desc: "Mudas Pioneiras" },
-            { emoji: "🌾", nome: "Capim Cobertor", desc: "Proteção contra Erosão" },
-            { emoji: "🚜", nome: "Preparo do Solo", desc: "Transição Ecológica" }
-        ];
+        let elementos = [];
+        if (state.area_plantio >= 1200 || cobertura >= 70) {
+            state.nivel_fazenda = "Nível 4: Oásis Regenerativo Sustentável (Ouro)";
+            badgeNivel.innerText = state.nivel_fazenda;
+            badgeNivel.style.background = "linear-gradient(135deg, #059669 0%, #10B981 100%)";
+            elementos = [
+                { emoji: "☀️", nome: "Energia Solar", desc: "Painéis Fotovoltaicos" },
+                { emoji: "🌳", nome: "Mata Nativa", desc: "Dossel & Sombreamento" },
+                { emoji: "🍎", nome: "Pomar Frutífero", desc: "Alimento Orgânico" },
+                { emoji: "🐝", nome: "Apiário Ecológico", desc: "Polinização Ativa" },
+                { emoji: "💧", nome: "Cisterna Pluvial", desc: "Reúso de Chuva" },
+                { emoji: "🌽", nome: "Agrofloresta", desc: "Milho & Consórcios" },
+                { emoji: "🐑", nome: "Pasto Rotativo", desc: "Zero Emissão" },
+                { emoji: "🏡", nome: "Eco-Casa", desc: "Design Bioclimático" }
+            ];
+        } else if (state.area_plantio >= 600 || cobertura >= 40) {
+            state.nivel_fazenda = "Nível 3: Fazenda Agroecológica em Transição (Prata)";
+            badgeNivel.innerText = state.nivel_fazenda;
+            badgeNivel.style.background = "linear-gradient(135deg, #2563EB 0%, #3B82F6 100%)";
+            elementos = [
+                { emoji: "🌳", nome: "Árvores Nativas", desc: "Absorção Contínua" },
+                { emoji: "🍊", nome: "Citros & Frutas", desc: "Pomar Jovem" },
+                { emoji: "🥕", nome: "Horta Familiar", desc: "Cultivo Local" },
+                { emoji: "🐔", nome: "Aves Livres", desc: "Manejo Ecológico" },
+                { emoji: "💧", nome: "Poço Sustentável", desc: "Água Eficiente" },
+                { emoji: "🌾", nome: "Solo Protegido", desc: "Cobertura Verde" }
+            ];
+        } else if (state.area_plantio >= 180) {
+            state.nivel_fazenda = "Nível 2: Sítio em Desenvolvimento Verde (Bronze)";
+            badgeNivel.innerText = state.nivel_fazenda;
+            badgeNivel.style.background = "linear-gradient(135deg, #D97706 0%, #F59E0B 100%)";
+            elementos = [
+                { emoji: "🌱", nome: "Mudas em Crescimento", desc: "Início do Plantio" },
+                { emoji: "🌾", nome: "Solo em Recuperação", desc: "Adubação Verde" },
+                { emoji: "🍎", nome: "Árvores Iniciais", desc: "Raízes Fortes" },
+                { emoji: "💧", nome: "Irrigação Gota", desc: "Zero Desperdício" }
+            ];
+        } else {
+            state.nivel_fazenda = "Nível 1: Solo Inicial em Recuperação";
+            badgeNivel.innerText = state.nivel_fazenda;
+            badgeNivel.style.background = "linear-gradient(135deg, #4B5563 0%, #6B7280 100%)";
+            elementos = [
+                { emoji: "🌱", nome: "Primeiros Brotos", desc: "Mudas Pioneiras" },
+                { emoji: "🌾", nome: "Capim Cobertor", desc: "Proteção de Solo" },
+                { emoji: "🚜", nome: "Preparo do Solo", desc: "Transição Verde" }
+            ];
+        }
+
+        elementos.forEach((el, idx) => {
+            const blk = document.createElement('div');
+            blk.className = 'farm-block';
+            blk.style.animationDelay = (idx * 50) + 'ms';
+            blk.innerHTML = `
+                <span class="farm-emoji">${el.emoji}</span>
+                <div class="farm-name">${el.nome}</div>
+                <div class="farm-desc">${el.desc}</div>
+            `;
+            container.appendChild(blk);
+        });
     }
 
-    elementos.forEach((el, idx) => {
-        const blk = document.createElement('div');
-        blk.className = 'farm-block';
-        blk.style.animationDelay = (idx * 60) + 'ms';
-        blk.innerHTML = `
-            <span class="farm-emoji">${el.emoji}</span>
-            <div class="farm-name">${el.nome}</div>
-            <div class="farm-desc">${el.desc}</div>
-        `;
-        container.appendChild(blk);
-    });
+    // Atualiza árvores 3D no Three.js
+    if (typeof render3DTrees === 'function') {
+        render3DTrees();
+    }
 
-    // Floresta Visual Geral
+    // Bioma Florestal com Cards 3D Realistas
     atualizarTwin();
 }
 
@@ -328,20 +374,440 @@ function atualizarTwin() {
     
     if (state.co2 > 1000) {
         ecoVille.classList.add('polluted');
-        document.getElementById('eco-status').innerText = `Sua rotina requer ${state.arvores} árvores adultas para limpar seu impacto. 🏭`;
+        document.getElementById('eco-status').innerText = `Sua rotina requer ${state.arvores} árvores adultas para limpar seu impacto anual. 🏭`;
     } else {
         ecoVille.classList.add('clean');
         document.getElementById('eco-status').innerText = `Seu impacto é brando, compensado por ${state.arvores} árvores anuais. 🏞️`;
     }
 
-    const qtde = Math.min(state.arvores, 100);
-    for(let i = 0; i < qtde; i++){
-        setTimeout(() => {
-            const tree = document.createElement('span');
-            tree.innerText = state.co2 > 1000 ? "🍂" : "🌳";
-            tree.style.animation = "slideIn 0.25s ease-out";
-            view.appendChild(tree);
-        }, i * 15);
+    const qtde = Math.min(state.arvores, 48);
+    const tipos = [
+        { icon: "🌲", nome: "Pinheiro" },
+        { icon: "🌳", nome: "Ipê Amarelo" },
+        { icon: "🌴", nome: "Palmeira" },
+        { icon: "🌳", nome: "Jacarandá" }
+    ];
+
+    for(let i = 0; i < qtde; i++) {
+        const item = tipos[i % tipos.length];
+        const tile = document.createElement('div');
+        tile.className = 'tree-3d-tile';
+        tile.style.animationDelay = (i * 15) + 'ms';
+        tile.innerHTML = `
+            <span class="tree-3d-icon">${state.co2 > 1000 ? "🍂" : item.icon}</span>
+            <div class="tree-3d-tag">#${i + 1}</div>
+            <div style="font-size:0.6rem; color:#A7F3D0; font-weight:700;">15kg/ano</div>
+        `;
+        view.appendChild(tile);
+    }
+}
+
+// =============================================================================
+// ENGINE THREE.JS: FAZENDINHA VIRTUAL 3D INTERATIVA (WEBGL)
+// =============================================================================
+let scene3D, camera3D, renderer3D, controls3D;
+let islandGroup, treesGroup, windmillMesh, bladesMesh, solarMesh, cloudsGroup;
+let isAutoRotating = true;
+let threeInitialized = false;
+
+function initThreeFarm() {
+    const container = document.getElementById('farm-3d-canvas-container');
+    if (!container || threeInitialized || typeof THREE === 'undefined') return;
+
+    const width = container.clientWidth || 800;
+    const height = container.clientHeight || 480;
+
+    // Cena
+    scene3D = new THREE.Scene();
+    scene3D.fog = new THREE.FogExp2(0x06150f, 0.015);
+
+    // Câmera Isométrica/Perspectiva
+    camera3D = new THREE.PerspectiveCamera(38, width / height, 0.1, 1000);
+    camera3D.position.set(26, 22, 26);
+
+    // Renderer WebGL com Suporte a Sombras
+    renderer3D = new THREE.WebGLRenderer({ antialias: true, alpha: true });
+    renderer3D.setSize(width, height);
+    renderer3D.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+    renderer3D.shadowMap.enabled = true;
+    renderer3D.shadowMap.type = THREE.PCFSoftShadowMap;
+    container.innerHTML = '';
+    container.appendChild(renderer3D.domElement);
+
+    // Controles Orbitais (Arrastar para girar em 360°)
+    if (typeof THREE.OrbitControls !== 'undefined') {
+        controls3D = new THREE.OrbitControls(camera3D, renderer3D.domElement);
+        controls3D.enableDamping = true;
+        controls3D.dampingFactor = 0.05;
+        controls3D.maxPolarAngle = Math.PI / 2.15;
+        controls3D.minDistance = 14;
+        controls3D.maxDistance = 55;
+        controls3D.autoRotate = isAutoRotating;
+        controls3D.autoRotateSpeed = 1.0;
+    }
+
+    // Iluminação Realista (Luz Solar Direcional + Luz Ambiente Natural)
+    const ambientLight = new THREE.AmbientLight(0xdcfce7, 0.85);
+    scene3D.add(ambientLight);
+
+    const hemiLight = new THREE.HemisphereLight(0xecfdf5, 0x14532d, 0.5);
+    scene3D.add(hemiLight);
+
+    const sunLight = new THREE.DirectionalLight(0xfffae0, 1.4);
+    sunLight.position.set(22, 35, 18);
+    sunLight.castShadow = true;
+    sunLight.shadow.mapSize.width = 1024;
+    sunLight.shadow.mapSize.height = 1024;
+    sunLight.shadow.camera.near = 10;
+    sunLight.shadow.camera.far = 80;
+    sunLight.shadow.camera.left = -16;
+    sunLight.shadow.camera.right = 16;
+    sunLight.shadow.camera.top = 16;
+    sunLight.shadow.camera.bottom = -16;
+    sunLight.shadow.bias = -0.0005;
+    scene3D.add(sunLight);
+
+    // Grupo da Ilha Flutuante
+    islandGroup = new THREE.Group();
+    scene3D.add(islandGroup);
+
+    // Plataforma Superior (Grama Verde Vibrante)
+    const grassGeo = new THREE.BoxGeometry(17, 1.3, 17);
+    const grassMat = new THREE.MeshStandardMaterial({
+        color: 0x10b981,
+        roughness: 0.65,
+        metalness: 0.1
+    });
+    const grassMesh = new THREE.Mesh(grassGeo, grassMat);
+    grassMesh.position.y = 0;
+    grassMesh.receiveShadow = true;
+    grassMesh.castShadow = true;
+    islandGroup.add(grassMesh);
+
+    // Rocha de Sustentação Inferior (Solo e Mineral)
+    const dirtGeo = new THREE.CylinderGeometry(11.8, 2.5, 7, 7);
+    const dirtMat = new THREE.MeshStandardMaterial({
+        color: 0x3d2817,
+        roughness: 0.95
+    });
+    const dirtMesh = new THREE.Mesh(dirtGeo, dirtMat);
+    dirtMesh.position.y = -4.1;
+    dirtMesh.castShadow = true;
+    dirtMesh.receiveShadow = true;
+    islandGroup.add(dirtMesh);
+
+    // Caminho da Fazenda / Solo Cultivado
+    const pathGeo = new THREE.BoxGeometry(3.5, 0.05, 11);
+    const pathMat = new THREE.MeshStandardMaterial({ color: 0x5a4128, roughness: 0.9 });
+    const pathMesh = new THREE.Mesh(pathGeo, pathMat);
+    pathMesh.position.set(-2.5, 0.66, 0);
+    pathMesh.receiveShadow = true;
+    islandGroup.add(pathMesh);
+
+    // Lago / Espelho d'água Sustentável
+    const pondGeo = new THREE.CylinderGeometry(2.4, 2.4, 0.08, 16);
+    const pondMat = new THREE.MeshStandardMaterial({
+        color: 0x0284c7,
+        roughness: 0.15,
+        metalness: 0.35,
+        transparent: true,
+        opacity: 0.9
+    });
+    const pondMesh = new THREE.Mesh(pondGeo, pondMat);
+    pondMesh.position.set(4.5, 0.66, 4.5);
+    islandGroup.add(pondMesh);
+
+    // Eco-Casa Bioclimática
+    const houseGroup = new THREE.Group();
+    const houseBase = new THREE.Mesh(
+        new THREE.BoxGeometry(3, 2.2, 3),
+        new THREE.MeshStandardMaterial({ color: 0xf1f5f9, roughness: 0.6 })
+    );
+    houseBase.position.y = 1.1 + 0.65;
+    houseBase.castShadow = true;
+    houseBase.receiveShadow = true;
+    houseGroup.add(houseBase);
+
+    // Telhado Terracota
+    const roofGeo = new THREE.ConeGeometry(2.8, 1.6, 4);
+    const roofMat = new THREE.MeshStandardMaterial({ color: 0x991b1b, roughness: 0.5 });
+    const roofMesh = new THREE.Mesh(roofGeo, roofMat);
+    roofMesh.position.y = 2.2 + 0.8 + 0.65;
+    roofMesh.rotation.y = Math.PI / 4;
+    roofMesh.castShadow = true;
+    houseGroup.add(roofMesh);
+
+    // Chaminé Ecológica
+    const chimney = new THREE.Mesh(
+        new THREE.BoxGeometry(0.5, 1.2, 0.5),
+        new THREE.MeshStandardMaterial({ color: 0x475569 })
+    );
+    chimney.position.set(0.8, 3.2, 0.4);
+    chimney.castShadow = true;
+    houseGroup.add(chimney);
+
+    houseGroup.position.set(-4.5, 0, -4.5);
+    islandGroup.add(houseGroup);
+
+    // Turbina Eólica com Hélices Giratórias
+    const windGroup = new THREE.Group();
+    const pole = new THREE.Mesh(
+        new THREE.CylinderGeometry(0.18, 0.35, 6, 8),
+        new THREE.MeshStandardMaterial({ color: 0xe2e8f0, roughness: 0.4 })
+    );
+    pole.position.y = 3.6;
+    pole.castShadow = true;
+    windGroup.add(pole);
+
+    const hub = new THREE.Mesh(
+        new THREE.SphereGeometry(0.35, 8, 8),
+        new THREE.MeshStandardMaterial({ color: 0x0f172a })
+    );
+    hub.position.set(0, 6.6, 0.3);
+    windGroup.add(hub);
+
+    bladesMesh = new THREE.Group();
+    for (let b = 0; b < 3; b++) {
+        const blade = new THREE.Mesh(
+            new THREE.BoxGeometry(0.2, 2.4, 0.05),
+            new THREE.MeshStandardMaterial({ color: 0x38bdf8 })
+        );
+        blade.position.y = 1.2;
+        const bPivot = new THREE.Group();
+        bPivot.rotation.z = (b * Math.PI * 2) / 3;
+        bPivot.add(blade);
+        bladesMesh.add(bPivot);
+    }
+    bladesMesh.position.set(0, 6.6, 0.35);
+    windGroup.add(bladesMesh);
+    windGroup.position.set(5, 0, -5);
+    islandGroup.add(windGroup);
+    windmillMesh = windGroup;
+
+    // Painéis Solares
+    solarMesh = new THREE.Group();
+    for (let s = 0; s < 2; s++) {
+        const panel = new THREE.Mesh(
+            new THREE.BoxGeometry(1.6, 0.1, 1.2),
+            new THREE.MeshStandardMaterial({ color: 0x1e3a8a, metalness: 0.8, roughness: 0.2 })
+        );
+        panel.rotation.x = -Math.PI / 6;
+        panel.position.set(-4.5 + (s * 1.8), 0.9, 3.5);
+        panel.castShadow = true;
+        solarMesh.add(panel);
+    }
+    islandGroup.add(solarMesh);
+
+    // Grupo de Árvores 3D Geradas Proceduralmente
+    treesGroup = new THREE.Group();
+    islandGroup.add(treesGroup);
+
+    // Nuvens Flutuantes Baixas
+    cloudsGroup = new THREE.Group();
+    for (let c = 0; c < 4; c++) {
+        const cloud = create3DCloud();
+        cloud.position.set(
+            (Math.random() - 0.5) * 32,
+            12 + Math.random() * 4,
+            (Math.random() - 0.5) * 32
+        );
+        cloudsGroup.add(cloud);
+    }
+    scene3D.add(cloudsGroup);
+
+    threeInitialized = true;
+
+    // Loop de Animação 60fps
+    animateThree();
+
+    // Renderiza as árvores 3D iniciais
+    render3DTrees();
+
+    // Listener de Redimensionamento Responsivo
+    window.addEventListener('resize', onWindowResize);
+}
+
+function create3DCloud() {
+    const group = new THREE.Group();
+    const mat = new THREE.MeshStandardMaterial({ color: 0xffffff, roughness: 0.9, transparent: true, opacity: 0.85 });
+    for (let i = 0; i < 5; i++) {
+        const sphere = new THREE.Mesh(new THREE.SphereGeometry(1.2 + Math.random() * 0.8, 7, 7), mat);
+        sphere.position.set((i - 2) * 1.0, (Math.random() - 0.5) * 0.4, (Math.random() - 0.5) * 0.8);
+        group.add(sphere);
+    }
+    return group;
+}
+
+// Criação de Árvore 3D Low-Poly Realista com Tronco e Copa Multi-Camadas
+function createProcedural3DTree(scale = 1, type = 'pine') {
+    const tree = new THREE.Group();
+
+    // Tronco de Madeira
+    const trunkGeo = new THREE.CylinderGeometry(0.18 * scale, 0.28 * scale, 1.4 * scale, 7);
+    const trunkMat = new THREE.MeshStandardMaterial({ color: 0x5c3a21, roughness: 0.85 });
+    const trunk = new THREE.Mesh(trunkGeo, trunkMat);
+    trunk.position.y = 0.7 * scale;
+    trunk.castShadow = true;
+    trunk.receiveShadow = true;
+    tree.add(trunk);
+
+    if (type === 'pine') {
+        // Pinheiro em 3 Níveis Conificados com Sombreamento
+        const colorsPine = [0x166534, 0x15803d, 0x22c55e];
+        for (let i = 0; i < 3; i++) {
+            const coneGeo = new THREE.ConeGeometry((1.1 - (i * 0.25)) * scale, 1.3 * scale, 7);
+            const coneMat = new THREE.MeshStandardMaterial({ color: colorsPine[i], roughness: 0.6 });
+            const cone = new THREE.Mesh(coneGeo, coneMat);
+            cone.position.y = (1.4 + (i * 0.7)) * scale;
+            cone.castShadow = true;
+            cone.receiveShadow = true;
+            tree.add(cone);
+        }
+    } else {
+        // Árvore Frutífera com Copa Arredondada Dodecaédrica e Maçãs
+        const crownGeo = new THREE.DodecahedronGeometry(1.05 * scale, 1);
+        const crownMat = new THREE.MeshStandardMaterial({ color: 0x10b981, roughness: 0.6 });
+        const crown = new THREE.Mesh(crownGeo, crownMat);
+        crown.position.y = (1.8 * scale);
+        crown.castShadow = true;
+        crown.receiveShadow = true;
+        tree.add(crown);
+
+        // Frutinhas Vermelhas
+        for (let f = 0; f < 5; f++) {
+            const fruit = new THREE.Mesh(
+                new THREE.SphereGeometry(0.12 * scale, 5, 5),
+                new THREE.MeshStandardMaterial({ color: 0xef4444, roughness: 0.3 })
+            );
+            const angle = (f / 5) * Math.PI * 2;
+            fruit.position.set(
+                Math.cos(angle) * 0.85 * scale,
+                (1.7 + (Math.sin(angle) * 0.3)) * scale,
+                Math.sin(angle) * 0.85 * scale
+            );
+            tree.add(fruit);
+        }
+    }
+
+    return tree;
+}
+
+function render3DTrees() {
+    if (!treesGroup) return;
+    
+    // Limpa árvores antigas
+    while (treesGroup.children.length > 0) {
+        treesGroup.remove(treesGroup.children[0]);
+    }
+
+    const count = Math.min(24, Math.max(3, Math.floor(state.mudas_capacidade * 0.85)));
+    
+    const slots = [
+        { x: -1.0, z: -5.0, type: 'pine', s: 1.1 },
+        { x: 1.5, z: -4.5, type: 'oak', s: 1.0 },
+        { x: -5.5, z: -1.0, type: 'pine', s: 0.9 },
+        { x: -5.8, z: 1.5, type: 'oak', s: 1.2 },
+        { x: -2.0, z: 5.5, type: 'oak', s: 1.05 },
+        { x: 1.0, z: 5.0, type: 'pine', s: 1.0 },
+        { x: 5.5, z: 1.0, type: 'oak', s: 1.15 },
+        { x: 5.0, z: -1.5, type: 'pine', s: 0.95 },
+        { x: 2.5, z: 1.5, type: 'oak', s: 0.85 },
+        { x: -1.5, z: 2.0, type: 'pine', s: 1.0 },
+        { x: 1.0, z: -1.5, type: 'oak', s: 1.2 },
+        { x: 3.5, z: -3.5, type: 'pine', s: 0.9 },
+        { x: -3.5, z: 3.5, type: 'oak', s: 1.1 },
+        { x: -6.0, z: 4.5, type: 'pine', s: 0.8 },
+        { x: 6.0, z: 4.0, type: 'oak', s: 0.9 },
+        { x: -6.5, z: -4.0, type: 'pine', s: 1.0 },
+        { x: 0.0, z: -6.5, type: 'oak', s: 1.1 },
+        { x: 4.0, z: 6.0, type: 'pine', s: 0.9 },
+        { x: -4.0, z: -6.5, type: 'pine', s: 1.0 },
+        { x: 6.5, z: -4.0, type: 'oak', s: 1.0 },
+        { x: -1.5, z: -3.0, type: 'oak', s: 0.85 },
+        { x: 2.0, z: 3.0, type: 'pine', s: 0.95 },
+        { x: -3.0, z: 1.0, type: 'oak', s: 0.9 },
+        { x: 0.0, z: 3.5, type: 'pine', s: 1.1 }
+    ];
+
+    for (let i = 0; i < count && i < slots.length; i++) {
+        const slot = slots[i];
+        const tree = createProcedural3DTree(slot.s, slot.type);
+        tree.position.set(slot.x, 0.65, slot.z);
+        tree.scale.set(0.01, 0.01, 0.01);
+        treesGroup.add(tree);
+
+        // Animação de brotamento suave
+        let p = 0;
+        const growTimer = setInterval(() => {
+            p += 0.09;
+            if (p >= 1) {
+                tree.scale.set(1, 1, 1);
+                clearInterval(growTimer);
+            } else {
+                tree.scale.set(p, p, p);
+            }
+        }, 16);
+    }
+}
+
+function animateThree() {
+    requestAnimationFrame(animateThree);
+
+    const time = Date.now() * 0.001;
+
+    // Rotação suave das pás da turbina eólica
+    if (bladesMesh) {
+        bladesMesh.rotation.z += 0.035;
+    }
+
+    // Nuvens orbitando suavemente
+    if (cloudsGroup) {
+        cloudsGroup.rotation.y += 0.0012;
+    }
+
+    // Brisa balançando sutilmente as copas das árvores 3D
+    if (treesGroup) {
+        treesGroup.children.forEach((tree, idx) => {
+            tree.rotation.z = Math.sin(time * 2 + idx) * 0.025;
+            tree.rotation.x = Math.cos(time * 1.5 + idx) * 0.015;
+        });
+    }
+
+    if (controls3D) {
+        controls3D.update();
+    }
+
+    if (renderer3D && scene3D && camera3D) {
+        renderer3D.render(scene3D, camera3D);
+    }
+}
+
+function reset3DCamera() {
+    if (camera3D && controls3D) {
+        camera3D.position.set(26, 22, 26);
+        controls3D.target.set(0, 0, 0);
+        controls3D.update();
+    }
+}
+
+function toggle3DAutoRotate() {
+    isAutoRotating = !isAutoRotating;
+    if (controls3D) controls3D.autoRotate = isAutoRotating;
+    const btn = document.getElementById('btn-toggle-spin');
+    if (btn) {
+        btn.innerHTML = `<i class="fas fa-sync-alt"></i> Giro 360°: ${isAutoRotating ? 'ON' : 'OFF'}`;
+    }
+}
+
+function onWindowResize() {
+    const container = document.getElementById('farm-3d-canvas-container');
+    if (!container || !camera3D || !renderer3D) return;
+    const w = container.clientWidth;
+    const h = container.clientHeight;
+    if (w > 0 && h > 0) {
+        camera3D.aspect = w / h;
+        camera3D.updateProjectionMatrix();
+        renderer3D.setSize(w, h);
     }
 }
 
@@ -354,30 +820,32 @@ if (chatInput) {
 }
 
 function sendChat(btnMsg) {
-    const text = btnMsg || chatInput.value.trim();
+    const text = btnMsg || (chatInput ? chatInput.value.trim() : '');
     if(!text) return;
     
     const win = document.getElementById('chat-window');
-    win.innerHTML += `<div class="chat-message user">${text}</div>`;
-    if (!btnMsg) chatInput.value = '';
-    win.scrollTop = win.scrollHeight;
-
-    setTimeout(() => {
-        let resp = "";
-        const txt = text.toLowerCase();
-        if(txt.includes('energia')) {
-            resp = `Você consome **${state.energia_kwh} kWh/mês**. Se desligar aparelhos em standby e limitar ar-condicionado, sua meta de 15% economiza cerca de R$ ${(state.energia_kwh * 0.15 * 0.75).toFixed(2)} todo mês!`;
-        } else if(txt.includes('fazendinha') || txt.includes('3d') || txt.includes('plantio')) {
-            resp = `Sua fazendinha 3D está no **${state.nivel_fazenda}**! Com seus ${state.area_plantio} m² de solo simulado, você abriga ${state.mudas_capacidade} árvores, absorvendo ${state.mudas_absorcao} kg de CO₂/ano.`;
-        } else if(txt.includes('banho') || txt.includes('água')) {
-            resp = `Seu banho diário informado é de **${state.calc_banho} minutos**. Reduzir 2 minutinhos economiza mais de 540 litros de água tratada por mês por pessoa!`;
-        } else {
-            resp = "Como copiloto Aero, recomendo testar o Quiz de 10 perguntas e emitir seu laudo PDF oficial para a feira!";
-        }
-        
-        win.innerHTML += `<div class="chat-message assistant"><strong>🤖 Aero:</strong> ${resp}</div>`;
+    if (win) {
+        win.innerHTML += `<div class="chat-message user">${text}</div>`;
+        if (!btnMsg && chatInput) chatInput.value = '';
         win.scrollTop = win.scrollHeight;
-    }, 500);
+
+        setTimeout(() => {
+            let resp = "";
+            const txt = text.toLowerCase();
+            if(txt.includes('energia')) {
+                resp = `Você consome **${state.energia_kwh} kWh/mês**. Se desligar aparelhos em standby e controlar ar-condicionado, sua meta de 15% economiza cerca de R$ ${(state.energia_kwh * 0.15 * 0.75).toFixed(2)} todo mês!`;
+            } else if(txt.includes('fazendinha') || txt.includes('3d') || txt.includes('plantio')) {
+                resp = `Sua fazendinha 3D está no **${state.nivel_fazenda}**! Com seus ${state.area_plantio} m² simulados, você abriga ${state.mudas_capacidade} árvores, absorvendo ${state.mudas_absorcao} kg de CO₂/ano. Arraste a maquete 3D para ver todos os ângulos!`;
+            } else if(txt.includes('banho') || txt.includes('água')) {
+                resp = `Seu banho diário informado é de **${state.calc_banho} minutos**. Reduzir 2 minutinhos poupa mais de 540 litros de água tratada por mês por pessoa!`;
+            } else {
+                resp = "Como copiloto Aero, recomendo testar o Quiz de 10 perguntas e emitir seu laudo PDF oficial para a feira!";
+            }
+            
+            win.innerHTML += `<div class="chat-message assistant"><strong>🤖 Aero:</strong> ${resp}</div>`;
+            win.scrollTop = win.scrollHeight;
+        }, 500);
+    }
 }
 
 // =============================================================================
@@ -398,7 +866,6 @@ const gabaritoQuiz = {
 
 function verificarQuiz10() {
     let acertos = 0;
-    let todasRespondidas = true;
 
     for (let i = 1; i <= 10; i++) {
         const chave = "qz" + i;
@@ -406,51 +873,60 @@ function verificarQuiz10() {
         const fbEl = document.getElementById("fb-" + chave);
 
         if (!marcada) {
-            todasRespondidas = false;
-            fbEl.className = "quiz-feedback incorrect";
-            fbEl.innerHTML = "⚠️ Por favor, selecione Mito ou Verdade nesta questão.";
+            if (fbEl) {
+                fbEl.className = "quiz-feedback incorrect";
+                fbEl.innerHTML = "⚠️ Por favor, selecione Mito ou Verdade nesta questão.";
+            }
             continue;
         }
 
         const acertou = (marcada.value === gabaritoQuiz[chave].correta);
         if (acertou) {
             acertos++;
-            fbEl.className = "quiz-feedback correct";
-            fbEl.innerHTML = `✅ <strong>Correto!</strong> ${gabaritoQuiz[chave].exp}`;
+            if (fbEl) {
+                fbEl.className = "quiz-feedback correct";
+                fbEl.innerHTML = `✅ <strong>Correto!</strong> ${gabaritoQuiz[chave].exp}`;
+            }
         } else {
-            fbEl.className = "quiz-feedback incorrect";
-            fbEl.innerHTML = `❌ <strong>Incorreto!</strong> ${gabaritoQuiz[chave].exp}`;
+            if (fbEl) {
+                fbEl.className = "quiz-feedback incorrect";
+                fbEl.innerHTML = `❌ <strong>Incorreto!</strong> ${gabaritoQuiz[chave].exp}`;
+            }
         }
     }
 
     state.quiz_score = acertos;
 
     // Atualiza Barra de Placar
-    document.getElementById('quiz-placar-atual').innerText = `${acertos} / 10 Acertos`;
-    document.getElementById('quiz-progresso-txt').innerText = `${acertos * 10}% de Conhecimento Ecológico`;
+    const placarEl = document.getElementById('quiz-placar-atual');
+    const progTxt = document.getElementById('quiz-progresso-txt');
+    if (placarEl) placarEl.innerText = `${acertos} / 10 Acertos`;
+    if (progTxt) progTxt.innerText = `${acertos * 10}% de Conhecimento Ecológico`;
 
     // Exibe Caixa de Resultado Final
     const resBox = document.getElementById('quiz-result-box');
     const titEl = document.getElementById('quiz-final-titulo');
     const descEl = document.getElementById('quiz-final-desc');
-    resBox.style.display = 'block';
+    if (resBox && titEl && descEl) {
+        resBox.style.display = 'block';
 
-    let rank = "";
-    if (acertos === 10) {
-        rank = "🏆 Mestre Supremo da Sustentabilidade (Gabaritou!)";
-    } else if (acertos >= 8) {
-        rank = "🌟 Guardião Ecológico de Elite";
-    } else if (acertos >= 5) {
-        rank = "🌿 Cidadão Consciente em Ação";
-    } else {
-        rank = "🌱 Aprendiz do Meio Ambiente";
+        let rank = "";
+        if (acertos === 10) {
+            rank = "🏆 Mestre Supremo da Sustentabilidade (Gabaritou!)";
+        } else if (acertos >= 8) {
+            rank = "🌟 Guardião Ecológico de Elite";
+        } else if (acertos >= 5) {
+            rank = "🌿 Cidadão Consciente em Ação";
+        } else {
+            rank = "🌱 Aprendiz do Meio Ambiente";
+        }
+
+        titEl.innerText = `Seu Resultado: ${acertos} / 10 Acertos`;
+        descEl.innerHTML = `Título Conquistado: <strong>${rank}</strong>.<br>Os detalhes técnicos e gabarito foram atualizados acima e salvos no Laudo PDF!`;
     }
 
-    titEl.innerText = `Seu Resultado: ${acertos} / 10 Acertos`;
-    descEl.innerHTML = `Título Conquistado: <strong>${rank}</strong>.<br>Os detalhes técnicos e gabarito foram atualizados acima e salvos no Laudo PDF!`;
-
     // Efeito Visual de Comemoração / Balões
-    if (acertos >= 5) {
+    if (typeof confetti === 'function' && acertos >= 5) {
         confetti({
             particleCount: 160,
             spread: 100,
@@ -476,12 +952,14 @@ function registrarVazamento() {
     });
 
     const lista = document.getElementById('vaz-lista');
-    lista.innerHTML += `
-        <div class="vaz-item">
-            🔴 <strong>${local}</strong> — Intensidade ${int}/10<br>
-            Desperdício: <strong>${perda.toLocaleString('pt-BR')} L/mês</strong> (~R$ ${custo}/mês)
-        </div>
-    `;
+    if (lista) {
+        lista.innerHTML += `
+            <div class="vaz-item">
+                🔴 <strong>${local}</strong> — Intensidade ${int}/10<br>
+                Desperdício: <strong>${perda.toLocaleString('pt-BR')} L/mês</strong> (~R$ ${custo}/mês)
+            </div>
+        `;
+    }
 }
 
 // =============================================================================
@@ -489,7 +967,7 @@ function registrarVazamento() {
 // =============================================================================
 function gerarQRCode() {
     const box = document.getElementById("qrcode-container");
-    if (!box) return;
+    if (!box || typeof QRCode === 'undefined') return;
     box.innerHTML = "";
     new QRCode(box, {
         text: window.location.href,
@@ -502,12 +980,16 @@ function gerarQRCode() {
 }
 
 function gerarPDFConsolidado() {
+    if (typeof window.jspdf === 'undefined') {
+        alert("Carregando motor de PDF, aguarde um segundo...");
+        return;
+    }
     const { jsPDF } = window.jspdf;
     const doc = new jsPDF('p', 'pt', 'letter');
 
     // Cabeçalho Principal
     doc.setFont("helvetica", "bold");
-    doc.setTextColor(6, 95, 70); // Verde Escuro
+    doc.setTextColor(6, 95, 70);
     doc.setFontSize(20);
     doc.text("Laudo Técnico de Inteligência Ambiental - EcoTwin", 40, 45);
 
@@ -516,7 +998,6 @@ function gerarPDFConsolidado() {
     doc.setFontSize(10);
     doc.text("Documento Técnico Consolidado de Pegada Ecológica, Hábitos, 3D Farm e Auditoria", 40, 62);
 
-    // Linha Divisória
     doc.setDrawColor(5, 150, 105);
     doc.setLineWidth(1.5);
     doc.line(40, 72, 572, 72);
