@@ -1,11 +1,6 @@
 streamlit
 pandas
-<<<<<<< HEAD
-plotly
-reportlab
-=======
 numpy
 plotly
 reportlab
 scikit-learn
->>>>>>> fc4fcff347dd141a79655ff8aff2ac13b5674f88
