@@ -41,8 +41,18 @@ function openTab(tabId) {
     document.querySelectorAll('.tab-link').forEach(t => t.classList.remove('active'));
     document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
     
-    event.currentTarget.classList.add('active');
-    document.getElementById(tabId).classList.add('active');
+    const targetContent = document.getElementById(tabId);
+    if(targetContent) targetContent.classList.add('active');
+
+    const btn = document.querySelector(`.tab-link[onclick*="${tabId}"]`);
+    if(btn) btn.classList.add('active');
+
+    // Se a tela dashboard nao estiver ativa (ex: clique no Aero), ativa ela
+    if(!document.getElementById('screen-dashboard').classList.contains('active')) {
+        showScreen('screen-dashboard');
+        initDashboard();
+        gerarQRCode();
+    }
 
     // Força re-render dos graficos pra nao bugar tamanho
     if(tabId === 'tab-diag' && chartDonut) chartDonut.update();
