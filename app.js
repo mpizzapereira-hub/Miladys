@@ -471,12 +471,25 @@ function initThreeFarm() {
     islandGroup = new THREE.Group();
     scene3D.add(islandGroup);
 
-    // Plataforma Superior (Grama Verde Vibrante)
-    const grassGeo = new THREE.BoxGeometry(17, 1.3, 17);
+    // Plataforma Superior (Grama Verde Vibrante e Orgânica)
+    const grassGeo = new THREE.BoxGeometry(17, 1.3, 17, 12, 1, 12);
+    const posG = grassGeo.attributes.position;
+    for (let i = 0; i < posG.count; i++) {
+        if (posG.getY(i) > 0) {
+            const px = posG.getX(i);
+            const pz = posG.getZ(i);
+            const distCenter = Math.hypot(px, pz);
+            if (distCenter > 5) {
+                posG.setY(i, posG.getY(i) + (Math.random() * 0.4));
+            }
+        }
+    }
+    grassGeo.computeVertexNormals();
     const grassMat = new THREE.MeshStandardMaterial({
-        color: 0x10b981,
-        roughness: 0.65,
-        metalness: 0.1
+        color: 0x16a34a,
+        roughness: 0.85,
+        metalness: 0.05,
+        flatShading: true
     });
     const grassMesh = new THREE.Mesh(grassGeo, grassMat);
     grassMesh.position.y = 0;
@@ -484,11 +497,18 @@ function initThreeFarm() {
     grassMesh.castShadow = true;
     islandGroup.add(grassMesh);
 
-    // Rocha de Sustentação Inferior (Solo e Mineral)
-    const dirtGeo = new THREE.CylinderGeometry(11.8, 2.5, 7, 7);
+    // Rocha de Sustentação Inferior (Solo Orgânico e Mineral)
+    const dirtGeo = new THREE.CylinderGeometry(11.8, 2.5, 7, 12, 4);
+    const posD = dirtGeo.attributes.position;
+    for (let i = 0; i < posD.count; i++) {
+        posD.setX(i, posD.getX(i) + (Math.random() - 0.5) * 1.5);
+        posD.setZ(i, posD.getZ(i) + (Math.random() - 0.5) * 1.5);
+    }
+    dirtGeo.computeVertexNormals();
     const dirtMat = new THREE.MeshStandardMaterial({
         color: 0x3d2817,
-        roughness: 0.95
+        roughness: 1.0,
+        flatShading: true
     });
     const dirtMesh = new THREE.Mesh(dirtGeo, dirtMat);
     dirtMesh.position.y = -4.1;
@@ -638,13 +658,25 @@ function create3DCloud() {
     return group;
 }
 
-// Criação de Árvore 3D Low-Poly Realista com Tronco e Copa Multi-Camadas
+// Criação de Árvore 3D Mais Realista, Complexa e Texturizada
 function createProcedural3DTree(scale = 1, type = 'pine') {
     const tree = new THREE.Group();
 
-    // Tronco de Madeira
-    const trunkGeo = new THREE.CylinderGeometry(0.18 * scale, 0.28 * scale, 1.4 * scale, 7);
-    const trunkMat = new THREE.MeshStandardMaterial({ color: 0x5c3a21, roughness: 0.85 });
+    // Tronco de Madeira Detalhado
+    const trunkGeo = new THREE.CylinderGeometry(0.18 * scale, 0.28 * scale, 1.4 * scale, 8);
+    const posT = trunkGeo.attributes.position;
+    for(let i = 0; i < posT.count; i++) {
+        if (posT.getY(i) > 0) continue;
+        posT.setX(i, posT.getX(i) + (Math.random() - 0.5) * 0.05);
+        posT.setZ(i, posT.getZ(i) + (Math.random() - 0.5) * 0.05);
+    }
+    trunkGeo.computeVertexNormals();
+    
+    const trunkMat = new THREE.MeshStandardMaterial({ 
+        color: 0x4a3018, 
+        roughness: 0.95,
+        flatShading: true 
+    });
     const trunk = new THREE.Mesh(trunkGeo, trunkMat);
     trunk.position.y = 0.7 * scale;
     trunk.castShadow = true;
@@ -652,40 +684,81 @@ function createProcedural3DTree(scale = 1, type = 'pine') {
     tree.add(trunk);
 
     if (type === 'pine') {
-        // Pinheiro em 3 Níveis Conificados com Sombreamento
-        const colorsPine = [0x166534, 0x15803d, 0x22c55e];
-        for (let i = 0; i < 3; i++) {
-            const coneGeo = new THREE.ConeGeometry((1.1 - (i * 0.25)) * scale, 1.3 * scale, 7);
-            const coneMat = new THREE.MeshStandardMaterial({ color: colorsPine[i], roughness: 0.6 });
+        // Pinheiro em 4 Níveis Orgânicos
+        const colorsPine = [0x0f5132, 0x146c43, 0x198754, 0x22c55e];
+        for (let i = 0; i < 4; i++) {
+            const coneGeo = new THREE.ConeGeometry((1.2 - (i * 0.25)) * scale, 1.4 * scale, 9);
+            const posC = coneGeo.attributes.position;
+            for(let j = 0; j < posC.count; j++) {
+                if (posC.getY(j) > 0.5) continue;
+                posC.setX(j, posC.getX(j) + (Math.random() - 0.5) * 0.15);
+                posC.setZ(j, posC.getZ(j) + (Math.random() - 0.5) * 0.15);
+            }
+            coneGeo.computeVertexNormals();
+
+            const coneMat = new THREE.MeshStandardMaterial({ 
+                color: colorsPine[i], 
+                roughness: 0.8,
+                flatShading: true
+            });
             const cone = new THREE.Mesh(coneGeo, coneMat);
-            cone.position.y = (1.4 + (i * 0.7)) * scale;
+            cone.position.y = (1.4 + (i * 0.6)) * scale;
             cone.castShadow = true;
             cone.receiveShadow = true;
             tree.add(cone);
         }
     } else {
-        // Árvore Frutífera com Copa Arredondada Dodecaédrica e Maçãs
-        const crownGeo = new THREE.DodecahedronGeometry(1.05 * scale, 1);
-        const crownMat = new THREE.MeshStandardMaterial({ color: 0x10b981, roughness: 0.6 });
-        const crown = new THREE.Mesh(crownGeo, crownMat);
-        crown.position.y = (1.8 * scale);
-        crown.castShadow = true;
-        crown.receiveShadow = true;
-        tree.add(crown);
+        // Árvore de Folhas Largas Multi-Copas
+        const leavesGroup = new THREE.Group();
+        const leafMat = new THREE.MeshStandardMaterial({ 
+            color: 0x22c55e, 
+            roughness: 0.7,
+            flatShading: true
+        });
+        
+        const blobs = [
+            { y: 1.8, s: 1.2 },
+            { y: 2.2, s: 1.0, x: 0.5, z: 0.3 },
+            { y: 2.1, s: 0.9, x: -0.5, z: -0.2 },
+            { y: 2.3, s: 0.95, x: -0.2, z: 0.5 },
+            { y: 1.9, s: 0.85, x: 0.4, z: -0.6 }
+        ];
 
-        // Frutinhas Vermelhas
-        for (let f = 0; f < 5; f++) {
-            const fruit = new THREE.Mesh(
-                new THREE.SphereGeometry(0.12 * scale, 5, 5),
-                new THREE.MeshStandardMaterial({ color: 0xef4444, roughness: 0.3 })
-            );
-            const angle = (f / 5) * Math.PI * 2;
-            fruit.position.set(
-                Math.cos(angle) * 0.85 * scale,
-                (1.7 + (Math.sin(angle) * 0.3)) * scale,
-                Math.sin(angle) * 0.85 * scale
-            );
-            tree.add(fruit);
+        blobs.forEach(b => {
+            const crownGeo = new THREE.DodecahedronGeometry(b.s * scale, 1);
+            const pos = crownGeo.attributes.position;
+            for(let j=0; j<pos.count; j++){
+                pos.setX(j, pos.getX(j) * (1 + (Math.random()*0.2)));
+                pos.setY(j, pos.getY(j) * (1 + (Math.random()*0.2)));
+                pos.setZ(j, pos.getZ(j) * (1 + (Math.random()*0.2)));
+            }
+            crownGeo.computeVertexNormals();
+
+            const crown = new THREE.Mesh(crownGeo, leafMat);
+            crown.position.set((b.x||0)*scale, b.y*scale, (b.z||0)*scale);
+            crown.castShadow = true;
+            crown.receiveShadow = true;
+            leavesGroup.add(crown);
+        });
+        tree.add(leavesGroup);
+
+        // Frutos Ocasionais
+        if (Math.random() > 0.4) {
+            for (let f = 0; f < 8; f++) {
+                const fruit = new THREE.Mesh(
+                    new THREE.SphereGeometry(0.12 * scale, 6, 6),
+                    new THREE.MeshStandardMaterial({ color: 0xe11d48, roughness: 0.3, metalness: 0.1 })
+                );
+                const angle = Math.random() * Math.PI * 2;
+                const r = 0.7 * scale + Math.random() * 0.4;
+                fruit.position.set(
+                    Math.cos(angle) * r,
+                    (1.7 + Math.random() * 0.8) * scale,
+                    Math.sin(angle) * r
+                );
+                fruit.castShadow = true;
+                tree.add(fruit);
+            }
         }
     }
 
@@ -694,59 +767,62 @@ function createProcedural3DTree(scale = 1, type = 'pine') {
 
 function render3DTrees() {
     if (!treesGroup) return;
-    
-    // Limpa árvores antigas
-    while (treesGroup.children.length > 0) {
-        treesGroup.remove(treesGroup.children[0]);
-    }
 
-    const count = Math.min(24, Math.max(3, Math.floor(state.mudas_capacidade * 0.85)));
-    
-    const slots = [
-        { x: -1.0, z: -5.0, type: 'pine', s: 1.1 },
-        { x: 1.5, z: -4.5, type: 'oak', s: 1.0 },
-        { x: -5.5, z: -1.0, type: 'pine', s: 0.9 },
-        { x: -5.8, z: 1.5, type: 'oak', s: 1.2 },
-        { x: -2.0, z: 5.5, type: 'oak', s: 1.05 },
-        { x: 1.0, z: 5.0, type: 'pine', s: 1.0 },
-        { x: 5.5, z: 1.0, type: 'oak', s: 1.15 },
-        { x: 5.0, z: -1.5, type: 'pine', s: 0.95 },
-        { x: 2.5, z: 1.5, type: 'oak', s: 0.85 },
-        { x: -1.5, z: 2.0, type: 'pine', s: 1.0 },
-        { x: 1.0, z: -1.5, type: 'oak', s: 1.2 },
-        { x: 3.5, z: -3.5, type: 'pine', s: 0.9 },
-        { x: -3.5, z: 3.5, type: 'oak', s: 1.1 },
-        { x: -6.0, z: 4.5, type: 'pine', s: 0.8 },
-        { x: 6.0, z: 4.0, type: 'oak', s: 0.9 },
-        { x: -6.5, z: -4.0, type: 'pine', s: 1.0 },
-        { x: 0.0, z: -6.5, type: 'oak', s: 1.1 },
-        { x: 4.0, z: 6.0, type: 'pine', s: 0.9 },
-        { x: -4.0, z: -6.5, type: 'pine', s: 1.0 },
-        { x: 6.5, z: -4.0, type: 'oak', s: 1.0 },
-        { x: -1.5, z: -3.0, type: 'oak', s: 0.85 },
-        { x: 2.0, z: 3.0, type: 'pine', s: 0.95 },
-        { x: -3.0, z: 1.0, type: 'oak', s: 0.9 },
-        { x: 0.0, z: 3.5, type: 'pine', s: 1.1 }
-    ];
+    // A quantidade de árvores 3D é EXATAMENTE a quantidade de mudas_capacidade salvas.
+    const targetCount = state.mudas_capacidade;
+    const maxTrees = 150; // Limite de segurança para WebGL no navegador
+    const count = Math.min(targetCount, maxTrees);
 
-    for (let i = 0; i < count && i < slots.length; i++) {
-        const slot = slots[i];
-        const tree = createProcedural3DTree(slot.s, slot.type);
-        tree.position.set(slot.x, 0.65, slot.z);
-        tree.scale.set(0.01, 0.01, 0.01);
-        treesGroup.add(tree);
+    const currentCount = treesGroup.children.length;
 
-        // Animação de brotamento suave
-        let p = 0;
-        const growTimer = setInterval(() => {
-            p += 0.09;
-            if (p >= 1) {
-                tree.scale.set(1, 1, 1);
-                clearInterval(growTimer);
-            } else {
-                tree.scale.set(p, p, p);
-            }
-        }, 16);
+    // Adiciona novas árvores caso o slider aumente
+    if (currentCount < count) {
+        const treesToAdd = count - currentCount;
+        for (let i = 0; i < treesToAdd; i++) {
+            let x, z, inHouse, inWindmill, inPond, inPath;
+            let attempts = 0;
+            do {
+                x = (Math.random() - 0.5) * 15; 
+                z = (Math.random() - 0.5) * 15; 
+                inHouse = Math.hypot(x - (-4.5), z - (-4.5)) < 3.5;
+                inWindmill = Math.hypot(x - 5, z - (-5)) < 2.5;
+                inPond = Math.hypot(x - 4.5, z - 4.5) < 3.0;
+                inPath = Math.abs(x - (-2.5)) < 2.0 && Math.abs(z) < 5.5;
+                attempts++;
+            } while ((inHouse || inWindmill || inPond || inPath) && attempts < 50);
+
+            const type = Math.random() > 0.4 ? 'pine' : 'oak';
+            const s = 0.65 + Math.random() * 0.5; // Escala variável para realismo
+            
+            const tree = createProcedural3DTree(s, type);
+            tree.position.set(x, 0.65, z);
+            tree.scale.set(0.01, 0.01, 0.01);
+            tree.rotation.y = Math.random() * Math.PI * 2;
+            
+            treesGroup.add(tree);
+
+            // Animação de brotamento suave
+            setTimeout(() => {
+                let p = 0;
+                const growTimer = setInterval(() => {
+                    p += 0.08;
+                    if (p >= 1) {
+                        tree.scale.set(1, 1, 1);
+                        clearInterval(growTimer);
+                    } else {
+                        tree.scale.set(p, p, p);
+                    }
+                }, 16);
+            }, i * (800 / treesToAdd)); // Brotamento progressivo
+        }
+    } 
+    // Remove árvores caso o slider diminua
+    else if (currentCount > count) {
+        const treesToRemove = currentCount - count;
+        for (let i = 0; i < treesToRemove; i++) {
+            const tree = treesGroup.children[treesGroup.children.length - 1];
+            treesGroup.remove(tree);
+        }
     }
 }
 
