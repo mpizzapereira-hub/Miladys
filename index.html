@@ -4,14 +4,14 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>EcoTwin | Modo FECART (Completo)</title>
-    <link rel="stylesheet" href="style.css?v=3">
+    <link rel="stylesheet" href="style.css?v=5">
     
     <!-- Bibliotecas Externas -->
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.25/jspdf.plugin.autotable.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
-    <!-- Confetti para simular st.balloons() -->
+    <!-- Confetti para simular balões e comemoração -->
     <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 </head>
@@ -65,7 +65,7 @@
     <!-- Tela 4: Dashboard Interativo com 8 Abas -->
     <section id="screen-dashboard" class="screen" style="padding: 20px;">
         <header class="dash-header">
-            <h2>🌍 Painel Ambiental</h2>
+            <h2>🌍 Painel Ambiental EcoTwin</h2>
             <div class="rank-badge" id="rank-badge">Carregando...</div>
             <button class="btn-secondary btn-small" onclick="location.reload()"><i class="fas fa-redo"></i> Sair</button>
         </header>
@@ -77,9 +77,9 @@
             <button class="tab-link" onclick="openTab('tab-twin')">🌳 Carbon Twin</button>
             <button class="tab-link" onclick="openTab('tab-ia')">🧠 Modelo IA</button>
             <button class="tab-link" onclick="openTab('tab-chat')">🤖 Chat Aero</button>
-            <button class="tab-link" onclick="openTab('tab-quiz')">📝 Quiz</button>
+            <button class="tab-link" onclick="openTab('tab-quiz')">📝 Quiz (10 Desafios)</button>
             <button class="tab-link" onclick="openTab('tab-vaz')">🔍 Vazamentos</button>
-            <button class="tab-link" onclick="openTab('tab-pdf')">📄 PDF</button>
+            <button class="tab-link" onclick="openTab('tab-pdf')">📄 PDF Consolidado</button>
         </nav>
 
         <div class="dash-content-area">
@@ -113,7 +113,7 @@
                         <canvas id="chart-donut"></canvas>
                     </div>
                     <div class="chart-box">
-                        <h4>Meta de Redução (10%)</h4>
+                        <h4>Meta de Redução (15%)</h4>
                         <canvas id="chart-bar"></canvas>
                     </div>
                 </div>
@@ -124,38 +124,81 @@
                 <h3 style="text-align:center;">Ajuste seus hábitos diários</h3>
                 <div class="calc-grid">
                     <div class="calc-item">
-                        <label><i class="fas fa-shower"></i> Banho (min)</label>
-                        <input type="range" id="calc-banho" min="5" max="60" value="15" oninput="updCalc()">
+                        <label><i class="fas fa-shower"></i> Banho (min/dia)</label>
+                        <input type="range" id="calc-banho" min="3" max="60" value="15" oninput="updCalc()">
                         <div class="calc-res"><span id="v-banho">15</span> min</div>
                         <div class="calc-delta" id="d-banho"></div>
                     </div>
                     <div class="calc-item">
-                        <label><i class="fas fa-hamburger"></i> Carne (dias/sem)</label>
+                        <label><i class="fas fa-hamburger"></i> Carne Vermelha (dias/sem)</label>
                         <input type="range" id="calc-carne" min="0" max="7" value="4" oninput="updCalc()">
                         <div class="calc-res"><span id="v-carne">4</span> dias</div>
                         <div class="calc-delta" id="d-carne"></div>
                     </div>
                     <div class="calc-item">
-                        <label><i class="fas fa-trash"></i> Lixo (sacos/sem)</label>
+                        <label><i class="fas fa-trash"></i> Lixo Descartado (sacos 50L/sem)</label>
                         <input type="range" id="calc-lixo" min="1" max="20" value="5" oninput="updCalc()">
                         <div class="calc-res"><span id="v-lixo">5</span> sacos</div>
                         <div class="calc-delta" id="d-lixo"></div>
                     </div>
                     <div class="calc-item">
-                        <label><i class="fas fa-car"></i> Transporte (km/dia)</label>
-                        <input type="range" id="calc-transp" min="0" max="100" value="20" oninput="updCalc()">
+                        <label><i class="fas fa-car"></i> Veículo Próprio (km/dia)</label>
+                        <input type="range" id="calc-transp" min="0" max="120" value="20" oninput="updCalc()">
                         <div class="calc-res"><span id="v-transp">20</span> km</div>
                         <div class="calc-delta" id="d-transp"></div>
                     </div>
                 </div>
-                <p class="caption text-center mt-3">* Os valores (verde/vermelho) indicam se você está abaixo ou acima da média nacional brasileira.</p>
+                <p class="caption text-center mt-3">* Indicadores coloridos comparam em tempo real sua rotina com a média nacional brasileira (IBGE/Sabesp).</p>
             </div>
 
-            <!-- 3. Aba Carbon Twin -->
+            <!-- 3. Aba Carbon Twin (Com Simulador de Plantio e Fazendinha 3D) -->
             <div id="tab-twin" class="tab-content">
-                <div class="eco-ville" id="eco-ville-visual">
-                    <h3>O Gêmeo Digital da sua Sustentabilidade</h3>
-                    <p class="mt-3">Cada atividade sua gera "débito de carbono". Aqui estão as árvores que trabalham para limpar o SEU impacto anual.</p>
+                <div class="eco-card">
+                    <h4>🌿 Conceito do Gêmeo Digital Florestal</h4>
+                    <p>Cada atividade humana gera uma dívida em dióxido de carbono. Uma árvore nativa absorve cerca de <b>15 kg de CO₂ por ano</b>. Use o simulador abaixo para expandir sua área verde e veja sua <b>Fazendinha 3D</b> evoluir!</p>
+                </div>
+
+                <!-- 1. Simulador de Reflorestamento e Área -->
+                <div class="calc-item mt-3" style="max-width: 900px; margin: 0 auto; text-align: left;">
+                    <h4>🌱 Simulador Interativo de Reflorestamento</h4>
+                    <label>Área disponível para quintal, plantio ou preservação: <strong id="val-area-plantio" style="color:#34D399; font-size:1.4rem;">120 m²</strong></label>
+                    <input type="range" id="inp-area-plantio" min="10" max="3000" value="120" step="10" oninput="updPlantio()" style="width:100%; margin: 15px 0;">
+                    
+                    <div class="metric-row mt-3">
+                        <div class="metric-box" style="padding: 15px;">
+                            <h3>Capacidade de Mudas</h3>
+                            <div class="value" id="out-mudas-capacidade" style="font-size:2rem; color:#34D399;">10</div>
+                            <p>Árvores viáveis</p>
+                        </div>
+                        <div class="metric-box" style="padding: 15px;">
+                            <h3>Absorção Anual</h3>
+                            <div class="value" id="out-mudas-absorcao" style="font-size:2rem; color:#3B82F6;">150</div>
+                            <p>kg CO₂e/ano</p>
+                        </div>
+                        <div class="metric-box" style="padding: 15px;">
+                            <h3>Compensação da Pegada</h3>
+                            <div class="value" id="out-mudas-cobertura" style="font-size:2rem; color:#F59E0B;">25%</div>
+                            <p>Neutro no plantio</p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 2. Fazendinha Virtual EcoTwin 3D -->
+                <div class="mt-3">
+                    <h3 class="text-center">🏡 Fazendinha Virtual EcoTwin (Maquete 3D Interativa)</h3>
+                    <p class="text-center caption">Conforme você reduz sua pegada de carbono e expande sua área de plantio, novos módulos sustentáveis surgem na sua fazendinha!</p>
+                    
+                    <div class="farm-viewport">
+                        <div class="farm-header-badge" id="farm-badge-nivel">Oásis Agroecológico</div>
+                        <div class="farm-grid-3d" id="farm-grid-elements">
+                            <!-- Inserido dinamicamente via JS -->
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 3. Floresta Geral -->
+                <div class="eco-ville mt-3" id="eco-ville-visual">
+                    <h4>Árvores Adultas Equivalentes à sua Pegada</h4>
                     <div class="forest-view" id="forest-view"></div>
                     <p class="eco-status" id="eco-status">Calculando...</p>
                 </div>
@@ -174,13 +217,13 @@
             <!-- 5. Aba Chat Aero -->
             <div id="tab-chat" class="tab-content">
                 <div class="chat-suggestions">
-                    <button class="btn-secondary" onclick="sendChat('Como diminuir energia?')">⚡ Como diminuir energia?</button>
-                    <button class="btn-secondary" onclick="sendChat('O que é Carbon Twin?')">🌳 O que é Carbon Twin?</button>
+                    <button class="btn-secondary" onclick="sendChat('Como diminuir energia rápida?')">⚡ Como diminuir energia?</button>
+                    <button class="btn-secondary" onclick="sendChat('Como funciona a Fazendinha 3D?')">🏡 O que é a Fazendinha 3D?</button>
                     <button class="btn-secondary" onclick="sendChat('Dica sobre banhos?')">💧 Dica sobre banhos?</button>
                 </div>
                 <div class="chat-window" id="chat-window">
                     <div class="chat-message assistant">
-                        <strong>🤖 Aero:</strong> Olá! Eu sou o Aero. Notei que preencheu seus dados. O que deseja saber?
+                        <strong>🤖 Aero:</strong> Olá! Eu sou o Aero. Notei que preencheu seus dados. O que deseja saber sobre sua sustentabilidade hoje?
                     </div>
                 </div>
                 <div class="chat-input-container">
@@ -189,57 +232,134 @@
                 </div>
             </div>
 
-            <!-- 6. Aba Quiz (Mito ou Verdade) -->
+            <!-- 6. Aba Quiz (10 Perguntas Desafiadoras) -->
             <div id="tab-quiz" class="tab-content">
-                <h3 class="text-center">Mito ou Verdade?</h3>
-                <div class="question-box">
-                    <p><strong>1. Deixar aparelhos na tomada em stand-by não consome energia.</strong></p>
-                    <label><input type="radio" name="qz1" value="mito"> Mito</label>
-                    <label><input type="radio" name="qz1" value="verdade"> Verdade</label>
+                <h3 class="text-center">📝 Desafio Ecológico: 10 Perguntas Mito ou Verdade</h3>
+                <p class="text-center caption">Teste seus conhecimentos! Cada acerto aumenta seu placar e dispara recompensas visuais.</p>
+                
+                <!-- Barra de Placar em Tempo Real -->
+                <div class="quiz-scorebar mt-3" style="max-width: 800px; margin: 0 auto; background:rgba(30,41,59,0.7); padding:15px; border-radius:12px; border:1px solid #334155; display:flex; justify-content:space-between; align-items:center;">
+                    <div style="font-weight:bold; font-size:1.1rem; color:#A7F3D0;"><i class="fas fa-trophy" style="color:#F59E0B;"></i> Placar: <span id="quiz-placar-atual">0 / 10</span></div>
+                    <div id="quiz-progresso-txt" style="font-size:0.95rem; color:#94A3B8;">Responda às questões e clique em Verificar</div>
                 </div>
-                <div class="question-box">
-                    <p><strong>2. A produção de carne bovina é uma das maiores geradoras de gás metano.</strong></p>
-                    <label><input type="radio" name="qz2" value="mito"> Mito</label>
-                    <label><input type="radio" name="qz2" value="verdade"> Verdade</label>
+
+                <div id="quiz-container-10" style="max-width: 850px; margin: 25px auto 0;">
+                    <!-- Pergunta 1 -->
+                    <div class="question-box">
+                        <p><strong>1. Deixar aparelhos eletrônicos em modo stand-by (luz vermelha acesa) não consome energia elétrica relevante.</strong></p>
+                        <label><input type="radio" name="qz1" value="mito"> Mito</label>
+                        <label><input type="radio" name="qz1" value="verdade"> Verdade</label>
+                        <div class="quiz-feedback" id="fb-qz1"></div>
+                    </div>
+                    <!-- Pergunta 2 -->
+                    <div class="question-box">
+                        <p><strong>2. A pecuária extensiva é uma das principais fontes antropogênicas mundiais de emissão de gás metano (CH₄).</strong></p>
+                        <label><input type="radio" name="qz2" value="mito"> Mito</label>
+                        <label><input type="radio" name="qz2" value="verdade"> Verdade</label>
+                        <div class="quiz-feedback" id="fb-qz2"></div>
+                    </div>
+                    <!-- Pergunta 3 -->
+                    <div class="question-box">
+                        <p><strong>3. Um banho diário de 15 minutos em chuveiro elétrico pode gastar mais de 100 litros de água tratada.</strong></p>
+                        <label><input type="radio" name="qz3" value="mito"> Mito</label>
+                        <label><input type="radio" name="qz3" value="verdade"> Verdade</label>
+                        <div class="quiz-feedback" id="fb-qz3"></div>
+                    </div>
+                    <!-- Pergunta 4 -->
+                    <div class="question-box">
+                        <p><strong>4. Uma sacola plástica comum descartada na natureza leva em média menos de 10 anos para se degradar por completo.</strong></p>
+                        <label><input type="radio" name="qz4" value="mito"> Mito</label>
+                        <label><input type="radio" name="qz4" value="verdade"> Verdade</label>
+                        <div class="quiz-feedback" id="fb-qz4"></div>
+                    </div>
+                    <!-- Pergunta 5 -->
+                    <div class="question-box">
+                        <p><strong>5. Painéis solares fotovoltaicos param totalmente de produzir energia elétrica em dias nublados ou com chuva fraca.</strong></p>
+                        <label><input type="radio" name="qz5" value="mito"> Mito</label>
+                        <label><input type="radio" name="qz5" value="verdade"> Verdade</label>
+                        <div class="quiz-feedback" id="fb-qz5"></div>
+                    </div>
+                    <!-- Pergunta 6 -->
+                    <div class="question-box">
+                        <p><strong>6. Lâmpadas LED consomem até 80% menos energia elétrica que as antigas lâmpadas incandescentes.</strong></p>
+                        <label><input type="radio" name="qz6" value="mito"> Mito</label>
+                        <label><input type="radio" name="qz6" value="verdade"> Verdade</label>
+                        <div class="quiz-feedback" id="fb-qz6"></div>
+                    </div>
+                    <!-- Pergunta 7 -->
+                    <div class="question-box">
+                        <p><strong>7. O vidro é um material 100% reciclável que pode ser reaproveitado infinitas vezes sem perder qualidade.</strong></p>
+                        <label><input type="radio" name="qz7" value="mito"> Mito</label>
+                        <label><input type="radio" name="qz7" value="verdade"> Verdade</label>
+                        <div class="quiz-feedback" id="fb-qz7"></div>
+                    </div>
+                    <!-- Pergunta 8 -->
+                    <div class="question-box">
+                        <p><strong>8. A fabricação de uma única calça jeans nova pode demandar até 10.000 litros de água ao longo da sua cadeia têxtil.</strong></p>
+                        <label><input type="radio" name="qz8" value="mito"> Mito</label>
+                        <label><input type="radio" name="qz8" value="verdade"> Verdade</label>
+                        <div class="quiz-feedback" id="fb-qz8"></div>
+                    </div>
+                    <!-- Pergunta 9 -->
+                    <div class="question-box">
+                        <p><strong>9. Manter o carregador de celular na tomada sem aparelho conectado não consome eletricidade alguma.</strong></p>
+                        <label><input type="radio" name="qz9" value="mito"> Mito</label>
+                        <label><input type="radio" name="qz9" value="verdade"> Verdade</label>
+                        <div class="quiz-feedback" id="fb-qz9"></div>
+                    </div>
+                    <!-- Pergunta 10 -->
+                    <div class="question-box">
+                        <p><strong>10. Cerca de 80% dos resíduos plásticos que poluem os oceanos têm origem em cidades e atividades em terra firme.</strong></p>
+                        <label><input type="radio" name="qz10" value="mito"> Mito</label>
+                        <label><input type="radio" name="qz10" value="verdade"> Verdade</label>
+                        <div class="quiz-feedback" id="fb-qz10"></div>
+                    </div>
+
+                    <div class="text-center mt-3">
+                        <button class="btn-giant btn-success" style="padding:15px 40px;" onclick="verificarQuiz10()">🎯 Validar Respostas & Calcular Placar 🎮</button>
+                    </div>
+
+                    <div id="quiz-result-box" class="mt-3 text-center" style="display:none; background:rgba(16,185,129,0.15); border:2px solid #10B981; padding:25px; border-radius:15px;">
+                        <h2 id="quiz-final-titulo" style="color:#34D399; font-size:2.2rem; margin-bottom:10px;">Parabéns!</h2>
+                        <p id="quiz-final-desc" style="font-size:1.3rem; color:#ECFDF5;"></p>
+                    </div>
                 </div>
-                <div class="text-center">
-                    <button class="btn-giant" onclick="verificarQuiz()">Verificar Respostas 🎮</button>
-                </div>
-                <div id="quiz-result" class="text-center mt-3" style="font-size: 1.5rem; font-weight: bold;"></div>
             </div>
 
             <!-- 7. Aba Vazamentos -->
             <div id="tab-vaz" class="tab-content">
-                <h3 class="text-center">Simulador de Perdas Hídricas</h3>
+                <h3 class="text-center">Simulador e Registro de Vazamentos</h3>
                 <div class="flex-row">
                     <div class="half-box">
                         <label>Local do Vazamento</label>
                         <select id="vaz-local" class="giant-input" style="font-size: 1.2rem; width:100%;">
-                            <option value="Torneira Pingando">Torneira Pingando</option>
-                            <option value="Vaso Sanitário">Vaso Sanitário (Filete)</option>
-                            <option value="Cano Estourado">Cano Estourado</option>
+                            <option value="Torneira Pingando Lenta">Torneira Pingando Lenta</option>
+                            <option value="Torneira Pingando Rápida">Torneira Pingando Rápida</option>
+                            <option value="Vaso Sanitário com Filete">Vaso Sanitário (Filete)</option>
+                            <option value="Chuveiro com Gotejamento">Chuveiro com Gotejamento</option>
+                            <option value="Cano com Infiltração">Cano com Infiltração</option>
                         </select>
                         <br><br>
-                        <label>Intensidade (Escala 1 a 10): <strong id="vaz-int-val">5</strong></label>
-                        <input type="range" id="vaz-int" min="1" max="10" value="5" class="giant-slider" oninput="document.getElementById('vaz-int-val').innerText=this.value">
+                        <label>Severidade (Escala 1 a 10): <strong id="vaz-int-val">4</strong></label>
+                        <input type="range" id="vaz-int" min="1" max="10" value="4" class="giant-slider" oninput="document.getElementById('vaz-int-val').innerText=this.value">
                         <br><br>
-                        <button class="btn-giant btn-secondary" style="font-size:1.2rem; width:100%;" onclick="registrarVazamento()">Registrar Vazamento</button>
+                        <button class="btn-giant btn-secondary" style="font-size:1.2rem; width:100%;" onclick="registrarVazamento()">➕ Registrar Ocorrência</button>
                     </div>
                     <div class="half-box">
-                        <h4>Histórico de Registros</h4>
+                        <h4>📋 Histórico de Ocorrências Auditadas</h4>
                         <div id="vaz-lista" class="vaz-lista"></div>
                     </div>
                 </div>
             </div>
 
-            <!-- 8. Aba Relatórios PDF -->
+            <!-- 8. Aba Relatórios PDF Consolidado -->
             <div id="tab-pdf" class="tab-content text-center">
-                <h3>Emissão de Laudo Técnico</h3>
-                <p>Gere um relatório oficial consolidando suas métricas, para levar com você.</p>
-                <button class="btn-giant btn-success mt-3" onclick="gerarPDF()"><i class="fas fa-file-pdf"></i> Baixar Relatório PDF</button>
+                <h3>📄 Emissão de Laudo Técnico Consolidado</h3>
+                <p>O documento oficial gerado em PDF consolida <b>todas as abas</b>: diagnóstico de energia, calculadora de hábitos comparada com a média brasileira, área de plantio da Fazendinha 3D, pontuação no Quiz de 10 perguntas e histórico de vazamentos.</p>
+                <button class="btn-giant btn-success mt-3" onclick="gerarPDFConsolidado()"><i class="fas fa-file-pdf"></i> Baixar Laudo Técnico Consolidado (PDF)</button>
 
                 <div class="qr-box mt-3" style="display:inline-block;">
-                    <h4>Ou leve no celular:</h4>
+                    <h4>Acesse no celular pelo QR Code:</h4>
                     <div id="qrcode-container"></div>
                 </div>
             </div>
@@ -253,6 +373,6 @@
         <div class="aero-avatar">🤖</div>
     </a>
 
-    <script src="app.js?v=3"></script>
+    <script src="app.js?v=5"></script>
 </body>
 </html>
