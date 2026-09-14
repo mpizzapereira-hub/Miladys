@@ -1,227 +1,297 @@
-// Estado global
+// Estado Global
 const state = {
     moradores: 4,
-    tempo_banho: 10,
-    pcs: 2,
-    base_kwh: 180, // consumo médio fixo além de TI
-    reducao_banho: false,
-    reducao_pcs: false
+    energia_kwh: 220,
+    co2: 0,
+    arvores: 0
 };
 
-// Listeners dos inputs do Quiz
-document.getElementById('inp-banho').addEventListener('input', e => {
-    document.getElementById('val-banho').innerText = e.target.value + " min";
-    state.tempo_banho = parseInt(e.target.value);
-});
-document.getElementById('inp-pcs').addEventListener('input', e => {
-    document.getElementById('val-pcs').innerText = e.target.value + " aparelhos";
-    state.pcs = parseInt(e.target.value);
-});
-document.getElementById('inp-moradores').addEventListener('input', e => {
-    state.moradores = parseInt(e.target.value);
-});
-
-// Navegação de Telas
-function showScreen(screenId) {
+// Navegação de Telas Principais
+function showScreen(id) {
     document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
-    document.getElementById(screenId).classList.add('active');
+    document.getElementById(id).classList.add('active');
 }
 
-// Lógica do Quiz
 function nextStep(stepNum) {
     document.querySelectorAll('.quiz-step').forEach(s => s.classList.remove('active'));
     document.getElementById('step-' + stepNum).classList.add('active');
-    document.getElementById('quiz-progress').style.width = (stepNum * 33.3) + "%";
+    document.getElementById('quiz-progress').style.width = (stepNum * 50) + "%";
 }
-function prevStep(stepNum) {
-    nextStep(stepNum);
-}
+function prevStep(stepNum) { nextStep(stepNum); }
 
+document.getElementById('inp-energia').addEventListener('input', e => {
+    document.getElementById('val-energia').innerText = e.target.value + " kWh";
+});
+
+// Finaliza Quiz -> Carrega Dashboard
 function finalizarQuiz() {
-    showScreen('screen-loading');
-    
-    // Atualiza estado final
     state.moradores = parseInt(document.getElementById('inp-moradores').value);
+    state.energia_kwh = parseInt(document.getElementById('inp-energia').value);
     
+    showScreen('screen-loading');
     setTimeout(() => {
         showScreen('screen-dashboard');
-        calcularESimular();
+        initDashboard();
         gerarQRCode();
-    }, 2000); // 2s de suspense
+    }, 1500);
 }
 
-// Animação de números (Counter)
+// Navegação das 8 Abas
+function openTab(tabId) {
+    document.querySelectorAll('.tab-link').forEach(t => t.classList.remove('active'));
+    document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
+    
+    event.currentTarget.classList.add('active');
+    document.getElementById(tabId).classList.add('active');
+
+    // Força re-render dos graficos pra nao bugar tamanho
+    if(tabId === 'tab-diag' && chartDonut) chartDonut.update();
+    if(tabId === 'tab-diag' && chartBar) chartBar.update();
+    if(tabId === 'tab-ia' && chartML) chartML.update();
+}
+
+// ==========================================
+// INICIALIZAÇÃO DO DASHBOARD
+// ==========================================
+let chartDonut, chartBar, chartML;
+
+function initDashboard() {
+    // 1. Diagnóstico Básico
+    const co2_energia = state.energia_kwh * 0.085 * 12;
+    state.co2 = co2_energia + (state.moradores * 150); // Estimativa rapida baseada em hab
+    state.arvores = Math.round(state.co2 / 15);
+    const meta_red = state.co2 * 0.9;
+
+    // Atualiza Caixas
+    animateValue('out-co2', 0, Math.round(state.co2), 1000);
+    animateValue('out-energia-total', 0, state.energia_kwh, 1000);
+    animateValue('out-arvores', 0, state.arvores, 1000);
+
+    // Rank Badge
+    const badge = document.getElementById('rank-badge');
+    if (state.co2 > 1000) { badge.innerText = "🚨 Alerta Vermelho"; badge.style.backgroundColor = "#EF4444"; }
+    else if (state.co2 > 500) { badge.innerText = "⚖️ Consumidor Mediano"; badge.style.backgroundColor = "#F59E0B"; }
+    else { badge.innerText = "🌟 Herói Verde"; badge.style.backgroundColor = "#10B981"; }
+
+    // Gráficos Chart.js
+    Chart.defaults.color = '#E2E8F0';
+    
+    if(!chartDonut) {
+        chartDonut = new Chart(document.getElementById('chart-donut'), {
+            type: 'doughnut',
+            data: { labels: ["Energia", "Transporte (Est.)", "Lixo/Água"], datasets: [{ data: [co2_energia, state.co2*0.3, state.co2*0.2], backgroundColor: ['#10B981', '#3B82F6', '#F59E0B'], borderWidth: 0 }] },
+            options: { responsive: true }
+        });
+    }
+
+    if(!chartBar) {
+        chartBar = new Chart(document.getElementById('chart-bar'), {
+            type: 'bar',
+            data: { labels: ["Atual", "Meta (-10%)"], datasets: [{ label: 'Pegada CO2', data: [state.co2, meta_red], backgroundColor: ['#EF4444', '#10B981'] }] },
+            options: { responsive: true, plugins: { legend: { display: false } } }
+        });
+    }
+
+    // Tab Carbon Twin
+    atualizarTwin();
+
+    // Tab IA (Projeção Linear Simples)
+    const hist = [state.energia_kwh*0.9, state.energia_kwh*0.95, state.energia_kwh*1.05, state.energia_kwh*0.98, state.energia_kwh*1.02, state.energia_kwh];
+    const avg = hist.reduce((a,b)=>a+b)/6;
+    if(!chartML) {
+        chartML = new Chart(document.getElementById('chart-ml'), {
+            type: 'line',
+            data: {
+                labels: ["Jan", "Fev", "Mar", "Abr", "Mai", "Jun", "Jul (IA)", "Ago (IA)"],
+                datasets: [
+                    { label: 'Histórico', data: hist.concat([null, null]), borderColor: '#10B981', tension: 0.1 },
+                    { label: 'Projeção', data: [null, null, null, null, null, state.energia_kwh, avg*1.01, avg*1.02], borderColor: '#3B82F6', borderDash: [5, 5], tension: 0.1 }
+                ]
+            }
+        });
+        document.getElementById('ia-alert').innerHTML = `💡 A tendência aponta que seu consumo médio se estabilizará perto de <strong>${avg.toFixed(0)} kWh</strong>.`;
+    }
+
+    // Inicializa Calculadora Pessoal
+    updCalc();
+}
+
+// Função para animação de numeros
 function animateValue(id, start, end, duration) {
     if (start === end) return;
     let range = end - start;
     let current = start;
     let increment = end > start ? 1 : -1;
     let stepTime = Math.abs(Math.floor(duration / range));
-    if(stepTime < 10) stepTime = 10;
-    
     const obj = document.getElementById(id);
     let timer = setInterval(function() {
-        current += Math.ceil((end-start) * (stepTime/duration));
-        
-        if ((increment > 0 && current >= end) || (increment < 0 && current <= end)) {
-            current = end;
-            clearInterval(timer);
-        }
+        current += increment;
+        if (current == end) { clearInterval(timer); }
         obj.innerHTML = current.toLocaleString('pt-BR');
     }, stepTime);
 }
 
-// Lógica Matemática
-function calcularESimular() {
-    // 1. Água
-    let tempoReal = state.tempo_banho;
-    if (state.reducao_banho) tempoReal -= 2; // Menos 2 minutos
-    if(tempoReal < 0) tempoReal = 0;
-    
-    const litros_banho_mes = tempoReal * 9 * state.moradores * 30;
-    const consumo_outro_agua = state.moradores * 30 * 40;
-    const consumo_agua_total = litros_banho_mes + consumo_outro_agua;
+// ==========================================
+// ABA 2: CALCULADORA PESSOAL
+// ==========================================
+function updCalc() {
+    const banho = parseInt(document.getElementById('calc-banho').value);
+    const carne = parseInt(document.getElementById('calc-carne').value);
+    const lixo = parseInt(document.getElementById('calc-lixo').value);
+    const transp = parseInt(document.getElementById('calc-transp').value);
 
-    // 2. Energia
-    let horas_pcs = 8;
-    if (state.reducao_pcs) horas_pcs = 4; // Desligando fora de uso cai pela metade
+    document.getElementById('v-banho').innerText = banho;
+    document.getElementById('v-carne').innerText = carne;
+    document.getElementById('v-lixo').innerText = lixo;
+    document.getElementById('v-transp').innerText = transp;
 
-    const kwh_ti_mes = state.pcs * 0.150 * horas_pcs * 30;
-    const kwh_total_mes = state.base_kwh + kwh_ti_mes;
+    // Médias Brasileiras
+    const mBanho = 12, mCarne = 3, mLixo = 4, mTransp = 15;
 
-    // 3. CO2
-    const co2_energia_kg = kwh_total_mes * 0.085;
-    const co2_agua_kg = consumo_agua_total * 0.0005;
-    const co2_total_ano_kg = (co2_energia_kg + co2_agua_kg) * 12;
-
-    const arvores_equivalentes = Math.round(co2_total_ano_kg / 15.0);
-
-    // 4. Lógica de Redução (Simulador Ao vivo)
-    // Calcula como seria SEM as reducoes vs COM reducoes para ver o extra
-    const base_litros = (state.tempo_banho * 9 * state.moradores * 30) + consumo_outro_agua;
-    const base_ti = state.pcs * 0.150 * 8 * 30;
-    const base_kwh = state.base_kwh + base_ti;
-    const base_co2_ano = ((base_kwh * 0.085) + (base_litros * 0.0005)) * 12;
-
-    const co2_evitado = base_co2_ano - co2_total_ano_kg;
-    const arvores_salvas_extras = Math.round(co2_evitado / 15.0);
-    const economia_reais = (base_kwh - kwh_total_mes) * 0.75 * 12; // economia anual
-
-    // 5. Atualiza UI com Counter Animation
-    const prevCo2 = parseInt(document.getElementById('out-co2').innerText.replace(/\./g,'')) || 0;
-    const prevAgua = parseInt(document.getElementById('out-agua').innerText.replace(/\./g,'')) || 0;
-    const prevEnergia = parseInt(document.getElementById('out-energia').innerText.replace(/\./g,'')) || 0;
-    
-    animateValue('out-co2', prevCo2, Math.round(co2_total_ano_kg), 800);
-    animateValue('out-agua', prevAgua, Math.round(consumo_agua_total), 800);
-    animateValue('out-energia', prevEnergia, Math.round(kwh_total_mes), 800);
-
-    // 6. Impacto Simulator Box
-    document.getElementById('out-arvores-salvas').innerText = arvores_salvas_extras;
-    document.getElementById('out-economia').innerText = economia_reais.toLocaleString('pt-BR', {minimumFractionDigits: 2});
-
-    // 7. Visual Gêmeo Digital
-    atualizarEcoVille(co2_total_ano_kg, arvores_equivalentes);
-    
-    // Salva global para PDF
-    window.ecoData = { 
-        co2: co2_total_ano_kg, 
-        agua: consumo_agua_total, 
-        energia: kwh_total_mes,
-        arvores_eq: arvores_equivalentes,
-        economia: economia_reais,
-        arvores_salvas: arvores_salvas_extras
-    };
+    renderDelta('d-banho', banho, mBanho, 'min');
+    renderDelta('d-carne', carne, mCarne, 'dias');
+    renderDelta('d-lixo', lixo, mLixo, 'sacos');
+    renderDelta('d-transp', transp, mTransp, 'km');
 }
 
-function atualizarEcoVille(co2, arvores) {
-    const rankBadge = document.getElementById('rank-badge');
-    const ecoVille = document.getElementById('eco-ville-visual');
-    const forestView = document.getElementById('forest-view');
-    const body = document.body;
-
-    ecoVille.classList.remove('polluted', 'clean');
-    body.classList.remove('theme-polluted');
-
-    if (co2 > 1000) {
-        rankBadge.innerText = "🚨 Alerta Vermelho";
-        rankBadge.style.backgroundColor = "#EF4444";
-        ecoVille.classList.add('polluted');
-        body.classList.add('theme-polluted');
-        document.getElementById('eco-status').innerText = `Seu estilo de vida consome o oxigênio de ${arvores} árvores adultas. 🏭`;
-    } else if (co2 > 500) {
-        rankBadge.innerText = "⚖️ Consumidor Mediano";
-        rankBadge.style.backgroundColor = "#F59E0B";
-        document.getElementById('eco-status').innerText = `Você precisa de ${arvores} árvores para empatar. Pode melhorar! 🏙️`;
+function renderDelta(id, val, media, unit) {
+    const el = document.getElementById(id);
+    const diff = val - media;
+    if (diff > 0) {
+        el.innerHTML = `<span class="delta-bad">▲ +${diff} ${unit} vs Média BR</span>`;
+    } else if (diff < 0) {
+        el.innerHTML = `<span class="delta-good">▼ ${diff} ${unit} vs Média BR</span>`;
     } else {
-        rankBadge.innerText = "🌟 Herói Verde";
-        rankBadge.style.backgroundColor = "#10B981";
+        el.innerHTML = `<span style="color:#94A3B8;">= Na Média BR</span>`;
+    }
+}
+
+// ==========================================
+// ABA 3: CARBON TWIN
+// ==========================================
+function atualizarTwin() {
+    const view = document.getElementById('forest-view');
+    const ecoVille = document.getElementById('eco-ville-visual');
+    view.innerHTML = '';
+    
+    if (state.co2 > 1000) {
+        ecoVille.classList.add('polluted');
+        document.getElementById('eco-status').innerText = `Seu estilo de vida exige o oxigênio de ${state.arvores} árvores adultas. 🏭`;
+    } else {
         ecoVille.classList.add('clean');
-        document.getElementById('eco-status').innerText = `Sensacional! Seu impacto é baixo (${arvores} árvores). A natureza agradece! 🏞️`;
+        document.getElementById('eco-status').innerText = `Seu impacto exige ${state.arvores} árvores anuais. 🏞️`;
     }
 
-    // Desenhar árvores com delay (Animação visual)
-    forestView.innerHTML = '';
-    const qtde = Math.min(arvores, 40); // cap para n quebrar tela
+    const qtde = Math.min(state.arvores, 100);
     for(let i=0; i<qtde; i++){
         setTimeout(() => {
             const tree = document.createElement('span');
-            tree.innerText = co2 > 1000 ? "🍂" : "🌳";
+            tree.innerText = state.co2 > 1000 ? "🍂" : "🌳";
             tree.style.animation = "slideIn 0.3s ease-out";
-            forestView.appendChild(tree);
-        }, i * 30);
+            view.appendChild(tree);
+        }, i * 20);
     }
 }
 
-// Trigger do Simulator
-function recalcularSimulacao() {
-    state.reducao_banho = document.getElementById('toggle-banho').checked;
-    state.reducao_pcs = document.getElementById('toggle-pcs').checked;
-    calcularESimular();
+// ==========================================
+// ABA 5: CHAT AERO
+// ==========================================
+const chatInput = document.getElementById('chat-input');
+chatInput.addEventListener('keypress', e => { if(e.key === 'Enter') sendChat(); });
+
+function sendChat(btnMsg) {
+    const text = btnMsg || chatInput.value.trim();
+    if(!text) return;
+    
+    const win = document.getElementById('chat-window');
+    win.innerHTML += `<div class="chat-message user">${text}</div>`;
+    chatInput.value = '';
+    win.scrollTop = win.scrollHeight;
+
+    setTimeout(() => {
+        let resp = "";
+        const txt = text.toLowerCase();
+        if(txt.includes('energia')) resp = `Você informou gastar ${state.energia_kwh} kWh/mês. Apague luzes ociosas e desative aparelhos em standby para reduzir esse valor!`;
+        else if(txt.includes('twin')) resp = `O Carbon Twin calcula que suas atividades requerem ${state.arvores} árvores/ano só para filtrar o seu ar.`;
+        else if(txt.includes('banho') || txt.includes('água')) resp = `Reduzir 2 minutinhos do seu banho poupa centenas de litros e corta sua conta!`;
+        else resp = "Como copiloto Aero, minha dica é que pequenas mudanças de hábito já criam grande impacto no Gêmeo Digital.";
+        
+        win.innerHTML += `<div class="chat-message assistant"><strong>🤖 Aero:</strong> ${resp}</div>`;
+        win.scrollTop = win.scrollHeight;
+    }, 600);
 }
 
-// QRCode Generator
+// ==========================================
+// ABA 6: QUIZ E GAMIFICAÇÃO
+// ==========================================
+function verificarQuiz() {
+    const q1 = document.querySelector('input[name="qz1"]:checked');
+    const q2 = document.querySelector('input[name="qz2"]:checked');
+    const resDiv = document.getElementById('quiz-result');
+
+    if(!q1 || !q2) {
+        resDiv.innerHTML = '<span class="delta-bad">Responda as duas perguntas primeiro!</span>';
+        return;
+    }
+
+    if(q1.value === 'mito' && q2.value === 'verdade') {
+        resDiv.innerHTML = '<span class="delta-good">🎉 Parabéns! Você acertou tudo! (Standby consome muita energia sim, e vacas emitem metano).</span>';
+        // Efeito Balões / Confete
+        confetti({ particleCount: 150, spread: 80, origin: { y: 0.6 } });
+    } else {
+        resDiv.innerHTML = '<span class="delta-bad">❌ Ops! Alguma resposta está errada. (Dica: Standby consome energia). Tente novamente!</span>';
+    }
+}
+
+// ==========================================
+// ABA 7: VAZAMENTOS
+// ==========================================
+function registrarVazamento() {
+    const local = document.getElementById('vaz-local').value;
+    const int = document.getElementById('vaz-int').value;
+    const perda = int * 15 * 30; // ex ficticio L/mes
+
+    const lista = document.getElementById('vaz-lista');
+    lista.innerHTML += `<div class="vaz-item">🔴 ${local} - Nível ${int} (Perda: <strong>${perda} Litros/mês</strong>)</div>`;
+}
+
+// ==========================================
+// ABA 8: RELATÓRIO PDF & QR CODE
+// ==========================================
 function gerarQRCode() {
-    document.getElementById("qrcode-container").innerHTML = "";
-    // O QRCode direciona para a URL atual (onde estiver hospedado, ex: github.io/Miladys)
-    const url = window.location.href;
-    new QRCode(document.getElementById("qrcode-container"), {
-        text: url,
-        width: 100,
-        height: 100,
-        colorDark : "#000000",
-        colorLight : "#ffffff",
-        correctLevel : QRCode.CorrectLevel.H
+    const box = document.getElementById("qrcode-container");
+    box.innerHTML = "";
+    new QRCode(box, {
+        text: window.location.href, width: 120, height: 120,
+        colorDark : "#000", colorLight : "#fff", correctLevel : QRCode.CorrectLevel.H
     });
 }
 
-// Relatório PDF
 function gerarPDF() {
     const { jsPDF } = window.jspdf;
     const doc = new jsPDF();
     
     doc.setFont("helvetica", "bold");
-    doc.setTextColor(16, 185, 129); // Verde
+    doc.setTextColor(16, 185, 129);
     doc.setFontSize(22);
-    doc.text("Relatório - Feira FECART (EcoTwin)", 20, 20);
+    doc.text("Relatório Ambiental - EcoTwin", 20, 20);
     
     doc.setFont("helvetica", "normal");
     doc.setTextColor(0, 0, 0);
     doc.setFontSize(14);
-    doc.text("O Gêmeo Digital da sua Sustentabilidade", 20, 30);
+    doc.text("Consolidado dos 8 Módulos de Sustentabilidade", 20, 30);
     
     doc.autoTable({
         startY: 40,
-        head: [['Métrica de Impacto', 'Resultado Pessoal']],
+        head: [['Métrica', 'Seu Resultado']],
         body: [
-            ['Pegada de Carbono', `${window.ecoData.co2.toFixed(1)} kg CO2e/ano`],
-            ['Consumo de Água', `${window.ecoData.agua.toFixed(0)} Litros/mês`],
-            ['Gasto de Energia', `${window.ecoData.energia.toFixed(0)} kWh/mês`],
-            ['Árvores Necessárias p/ Compensar', `${window.ecoData.arvores_eq} árvores adultas`]
+            ['Moradores Informados', `${state.moradores} Pessoas`],
+            ['Energia Declarada', `${state.energia_kwh} kWh/mês`],
+            ['Pegada de Carbono (Est.)', `${state.co2.toFixed(1)} kg CO2e/ano`],
+            ['Gêmeo Digital (Carbon Twin)', `${state.arvores} Árvores necessárias`]
         ],
-        headStyles: { fillColor: [16, 185, 129], textColor: 255 },
-        alternateRowStyles: { fillColor: [241, 245, 249] }
+        headStyles: { fillColor: [16, 185, 129] }
     });
     
-    doc.save("Meu_Impacto_EcoTwin.pdf");
+    doc.save("Laudo_EcoTwin_Feira.pdf");
 }
