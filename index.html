@@ -3,275 +3,170 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>EcoTwin | Monitoramento & Inteligência Ambiental</title>
+    <title>EcoTwin | Modo FECART</title>
     <link rel="stylesheet" href="style.css">
-    <!-- Chart.js para gráficos -->
+    <!-- Chart.js -->
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-    <!-- jsPDF para relatórios -->
+    <!-- jsPDF -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.25/jspdf.plugin.autotable.min.js"></script>
+    <!-- QRCode.js -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+    <!-- FontAwesome para Ícones -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 </head>
-<body>
-    <div class="app-container">
-        <!-- Sidebar -->
-        <aside class="sidebar">
-            <div class="sidebar-header">
-                <h2>🌱 EcoTwin</h2>
-                <p>Monitoramento & Inteligência Ambiental</p>
-            </div>
+<body class="theme-eco">
+
+    <!-- Tela 1: Boas Vindas -->
+    <section id="screen-welcome" class="screen active">
+        <div class="welcome-container">
+            <h1 class="bounce">🌱 EcoTwin</h1>
+            <h2>O Gêmeo Digital da sua Sustentabilidade</h2>
+            <p>Descubra o impacto real da sua casa no planeta e como pequenas atitudes salvam árvores!</p>
+            <button class="btn-giant" onclick="showScreen('screen-quiz')">COMEÇAR O TESTE <i class="fas fa-arrow-right"></i></button>
+        </div>
+        <div class="floating-icons">
+            <i class="fas fa-leaf"></i>
+            <i class="fas fa-water"></i>
+            <i class="fas fa-bolt"></i>
+            <i class="fas fa-tree"></i>
+        </div>
+    </section>
+
+    <!-- Tela 2: Quiz Interativo -->
+    <section id="screen-quiz" class="screen">
+        <div class="quiz-container">
+            <div class="progress-bar"><div class="progress-fill" id="quiz-progress"></div></div>
             
-            <hr>
-            
-            <div class="sidebar-section">
-                <h3>🏠 Consumo Residencial</h3>
-                <label>Número de Pessoas / Ocupantes</label>
-                <input type="number" id="inp-moradores" value="4" min="1" max="100">
-                
-                <label>Tempo Médio de Banho (min/pessoa)</label>
-                <input type="number" id="inp-banho" value="10" min="1" max="60">
-                
-                <label>Consumo de Energia Geral (kWh/mês)</label>
-                <input type="number" id="inp-energia" value="220" min="10" max="10000" step="10">
+            <!-- Pergunta 1 -->
+            <div class="quiz-step active" id="step-1">
+                <i class="fas fa-users step-icon"></i>
+                <h2>Quantas pessoas moram com você?</h2>
+                <input type="number" id="inp-moradores" value="4" min="1" max="20" class="giant-input">
+                <button class="btn-giant mt-3" onclick="nextStep(2)">Próxima <i class="fas fa-chevron-down"></i></button>
             </div>
 
-            <hr>
-
-            <div class="sidebar-section">
-                <h3>💻 Infraestrutura & TI</h3>
-                <label>Número de Computadores</label>
-                <input type="number" id="inp-pcs" value="5" min="0" max="200">
-                
-                <label>Horas de Uso Diário dos PCs: <span id="val-horas">8</span></label>
-                <input type="range" id="inp-horas" value="8" min="1" max="24">
+            <!-- Pergunta 2 -->
+            <div class="quiz-step" id="step-2">
+                <i class="fas fa-shower step-icon"></i>
+                <h2>Em média, quantos minutos dura o seu banho?</h2>
+                <div class="slider-container">
+                    <span id="val-banho" class="slider-val">10 min</span>
+                    <input type="range" id="inp-banho" value="10" min="5" max="40" class="giant-slider">
+                </div>
+                <div class="btn-group mt-3">
+                    <button class="btn-giant btn-secondary" onclick="prevStep(1)"><i class="fas fa-chevron-up"></i></button>
+                    <button class="btn-giant" onclick="nextStep(3)">Próxima <i class="fas fa-chevron-down"></i></button>
+                </div>
             </div>
 
-            <hr>
-
-            <div class="sidebar-section">
-                <label>Meta de Otimização Ecológica (%): <span id="val-meta">15</span></label>
-                <input type="range" id="inp-meta" value="15" min="5" max="50" step="5">
+            <!-- Pergunta 3 -->
+            <div class="quiz-step" id="step-3">
+                <i class="fas fa-laptop-house step-icon"></i>
+                <h2>Quantos computadores ou TVs ficam ligados na sua casa?</h2>
+                <div class="slider-container">
+                    <span id="val-pcs" class="slider-val">2 aparelhos</span>
+                    <input type="range" id="inp-pcs" value="2" min="0" max="15" class="giant-slider">
+                </div>
+                <div class="btn-group mt-3">
+                    <button class="btn-giant btn-secondary" onclick="prevStep(2)"><i class="fas fa-chevron-up"></i></button>
+                    <button class="btn-giant btn-success" onclick="finalizarQuiz()">VER RESULTADO <i class="fas fa-magic"></i></button>
+                </div>
             </div>
-        </aside>
+        </div>
+    </section>
 
-        <!-- Main Content -->
-        <main class="main-content">
-            <h1 class="main-title">EcoTwin | Monitoramento & Inteligência Ambiental</h1>
+    <!-- Tela 3: Loading (Suspense) -->
+    <section id="screen-loading" class="screen">
+        <div class="loading-container">
+            <i class="fas fa-cogs fa-spin loading-icon"></i>
+            <h2>Calculando o seu Gêmeo Digital...</h2>
+            <p>Analisando emissões de carbono e consumo hídrico.</p>
+        </div>
+    </section>
 
-            <!-- Tabs Navigation -->
-            <nav class="tabs-nav">
-                <button class="tab-btn active" data-target="tab-diagnostico">📊 Diagnóstico</button>
-                <button class="tab-btn" data-target="tab-carbon">🌳 Carbon Twin</button>
-                <button class="tab-btn" data-target="tab-ia">🧠 Modelo de IA</button>
-                <button class="tab-btn" data-target="tab-chat">🤖 Chat Aero</button>
-                <button class="tab-btn" data-target="tab-diag-inteligente">📝 Diagnóstico Inteligente</button>
-                <button class="tab-btn" data-target="tab-vazamentos">🔍 Vazamentos</button>
-                <button class="tab-btn" data-target="tab-relatorio">📄 Relatórios PDF</button>
-            </nav>
+    <!-- Tela 4: Dashboard Interativo (Totem) -->
+    <section id="screen-dashboard" class="screen">
+        <header class="dash-header">
+            <h2>🌍 Seu Perfil Ambiental</h2>
+            <div class="rank-badge" id="rank-badge">Carregando...</div>
+            <button class="btn-secondary btn-small" onclick="location.reload()"><i class="fas fa-redo"></i> Refazer Teste</button>
+        </header>
 
-            <!-- Tab: Diagnóstico -->
-            <section id="tab-diagnostico" class="tab-content active">
-                <h2>📊 Diagnóstico de Impacto Ambiental</h2>
-                
-                <div class="metrics-grid">
-                    <div class="metric-card">
-                        <div class="metric-label">Consumo Energético</div>
-                        <div class="metric-value" id="out-energia-total">0</div>
-                        <div class="metric-unit">kWh / mês</div>
+        <div class="dash-grid">
+            <!-- Lado Esquerdo: Métricas e Impacto -->
+            <div class="dash-left">
+                <div class="metric-row">
+                    <div class="metric-box">
+                        <i class="fas fa-cloud-meatball icon-red"></i>
+                        <h3>Pegada de Carbono</h3>
+                        <div class="value counter" id="out-co2">0</div>
+                        <p>kg CO₂e/ano</p>
                     </div>
-                    <div class="metric-card">
-                        <div class="metric-label">Pegada de Carbono</div>
-                        <div class="metric-value" id="out-pegada">0</div>
-                        <div class="metric-unit">kg CO₂e / ano</div>
+                    <div class="metric-box">
+                        <i class="fas fa-tint icon-blue"></i>
+                        <h3>Consumo de Água</h3>
+                        <div class="value counter" id="out-agua">0</div>
+                        <p>Litros/mês</p>
                     </div>
-                    <div class="metric-card">
-                        <div class="metric-label">Equivalência Ambiental</div>
-                        <div class="metric-value" id="out-arvores">0</div>
-                        <div class="metric-unit">Árvores Preservadas / ano</div>
-                    </div>
-                    <div class="metric-card">
-                        <div class="metric-label">Economia Estimada</div>
-                        <div class="metric-value" id="out-economia-fin">R$ 0,00</div>
-                        <div class="metric-unit">potencial financeiro / mês</div>
-                    </div>
-                </div>
-
-                <hr>
-
-                <div class="charts-grid">
-                    <div>
-                        <h3>Distribuição do Impacto Energético / Hídrico</h3>
-                        <canvas id="chart-donut"></canvas>
-                    </div>
-                    <div>
-                        <h3>Cenário Atual vs Meta de Redução</h3>
-                        <canvas id="chart-bar"></canvas>
+                    <div class="metric-box">
+                        <i class="fas fa-bolt icon-yellow"></i>
+                        <h3>Gasto de Energia</h3>
+                        <div class="value counter" id="out-energia">0</div>
+                        <p>kWh/mês</p>
                     </div>
                 </div>
 
-                <div class="eco-card mt-2">
-                    <h4>💡 Contextualização dos Resultados</h4>
-                    <p><b>A Pegada do Imóvel:</b> <span id="txt-pegada"></span> kg CO₂e/ano.</p>
-                    <p><b>Significado:</b> Este valor representa uma estimativa direta das emissões decorrentes do consumo de eletricidade e recursos hídricos.</p>
-                    <p><b>Maior Fator de Impacto:</b> O consumo elétrico predial responde pela maior fração das emissões calculadas.</p>
-                    <p><b>Recomendação Prioritária:</b> Definir metas para a infraestrutura de TI e otimizar equipamentos em standby podem gerar até <span id="txt-economia-ano"></span> de economia por ano.</p>
-                </div>
-            </section>
-
-            <!-- Tab: Carbon Twin -->
-            <section id="tab-carbon" class="tab-content">
-                <h2>🌳 Carbon Twin | Impacto Ambiental Visual</h2>
-                
-                <div class="charts-grid">
-                    <div class="eco-card">
-                        <h4 style="color: #EF4444;">🔴 Débito de Emissões</h4>
-                        <p>Ocorre quando as atividades operacionais geram liberação de CO₂ na atmosfera superior à capacidade de absorção local.</p>
+                <!-- Painel de Simulação Ao Vivo -->
+                <div class="simulacao-panel">
+                    <h3>🕹️ Simulador de Hábitos (Interativo)</h3>
+                    <p class="caption">Ligue ou desligue os interruptores e veja o impacto instantâneo no seu consumo!</p>
+                    
+                    <div class="toggle-row">
+                        <span><i class="fas fa-stopwatch"></i> Reduzir 2 min de banho</span>
+                        <label class="switch">
+                            <input type="checkbox" id="toggle-banho" onchange="recalcularSimulacao()">
+                            <span class="slider round"></span>
+                        </label>
                     </div>
-                    <div class="eco-card">
-                        <h4 style="color: #10B981;">🟢 Equivalência & Compensação</h4>
-                        <p>Representa a redução voluntária ou mitigação calculada atrelada a metas de eficiência e otimização energética.</p>
+                    
+                    <div class="toggle-row">
+                        <span><i class="fas fa-desktop"></i> Desligar PCs fora de uso</span>
+                        <label class="switch">
+                            <input type="checkbox" id="toggle-pcs" onchange="recalcularSimulacao()">
+                            <span class="slider round"></span>
+                        </label>
                     </div>
-                </div>
 
-                <hr>
-                <h3>🌲 Floresta Virtual de Equivalência</h3>
-                <p>Sua emissão anual (<span id="txt-emissao-anual"></span> kg CO₂e) corresponde à capacidade de absorção de <strong id="txt-arvores-eq"></strong> <strong>árvores adultas</strong>.</p>
-                <div class="forest-grid" id="forest-container">
-                    <!-- Árvores inseridas via JS -->
-                </div>
-                <p class="caption">Nota: Representação de equivalência florestal baseada no consumo informado. Esta simulação é educativa e não substitui auditorias oficiais de créditos de carbono.</p>
-            </section>
-
-            <!-- Tab: Modelo IA -->
-            <section id="tab-ia" class="tab-content">
-                <h2>🧠 Módulo de Inteligência Computacional (Simulação IA)</h2>
-                
-                <h3>1. Previsão de Consumo Energético (Projeção)</h3>
-                <canvas id="chart-ml" style="max-height: 300px; margin-bottom: 20px;"></canvas>
-                <div class="alert alert-info" id="alert-ia-previsao"></div>
-
-                <hr>
-
-                <div class="charts-grid">
-                    <div>
-                        <h3>2. Análise de Anomalias</h3>
-                        <div class="alert" id="alert-anomalia"></div>
-                    </div>
-                    <div>
-                        <h3>3. Cluster de Perfil (K-Means Visual)</h3>
-                        <canvas id="chart-cluster"></canvas>
+                    <div class="impacto-resultado" id="impacto-box">
+                        Ao ativar estes hábitos, você salvaria <strong><span class="counter" id="out-arvores-salvas">0</span> árvores</strong> extras por ano e economizaria <strong>R$ <span id="out-economia">0,00</span></strong>!
                     </div>
                 </div>
-            </section>
+            </div>
 
-            <!-- Tab: Chat Aero -->
-            <section id="tab-chat" class="tab-content">
-                <h2>🤖 Consultoria com o Assistente Aero</h2>
-                <p class="caption">O Aero utiliza os dados reais preenchidos no seu painel para responder perguntas personalizadas.</p>
-
-                <p><strong>💡 Sugestões de Perguntas Frequentes:</strong></p>
-                <div class="chat-suggestions">
-                    <button class="st-btn" onclick="sendChat('Onde estou gastando mais?')">⚡ Onde estou gastando mais?</button>
-                    <button class="st-btn" onclick="sendChat('Como posso economizar água nos banhos?')">💧 Como reduzir meu tempo de banho?</button>
-                    <button class="st-btn" onclick="sendChat('Como melhorar minha pontuação de emissões?')">🌱 Como melhorar meu perfil de carbono?</button>
+            <!-- Lado Direito: Visual e Compartilhamento -->
+            <div class="dash-right">
+                <!-- O Gêmeo Digital Visual -->
+                <div class="eco-ville" id="eco-ville-visual">
+                    <h3>O Seu Mundo:</h3>
+                    <div class="forest-view" id="forest-view"></div>
+                    <p class="eco-status" id="eco-status">Equivalente a absorção de 0 árvores.</p>
                 </div>
 
-                <hr>
-
-                <div class="chat-window" id="chat-window">
-                    <div class="chat-message assistant">
-                        <strong>🤖 Aero:</strong> Olá! Eu sou o Aero! Seu copiloto de sustentabilidade. Como posso analisar o seu consumo ou ajudar na sua meta de emissões hoje?
+                <!-- Ações da Feira -->
+                <div class="feira-actions">
+                    <div class="qr-box">
+                        <h4>Leve seu laudo no celular!</h4>
+                        <div id="qrcode-container"></div>
+                        <p class="caption">Aponte a câmera</p>
+                    </div>
+                    <div class="btn-box">
+                        <button class="btn-giant btn-success btn-full" onclick="gerarPDF()"><i class="fas fa-file-pdf"></i> Baixar PDF (P/ Impressora)</button>
                     </div>
                 </div>
-
-                <div class="chat-input-container">
-                    <input type="text" id="chat-input" placeholder="Digite sua dúvida para o Aero...">
-                    <button class="st-btn" onclick="sendChat()">Enviar</button>
-                </div>
-            </section>
-
-            <!-- Tab: Diagnóstico Inteligente -->
-            <section id="tab-diag-inteligente" class="tab-content">
-                <h2>📝 Diagnóstico Inteligente de Carbono</h2>
-                <p>Responda às questões sobre hábitos para obter sua avaliação técnica de conformidade:</p>
-
-                <div class="question">
-                    <p>1. Os equipamentos de TI e monitores são desligados ao fim da rotina?</p>
-                    <label><input type="radio" name="q1" value="10"> Sempre (10 Pts)</label>
-                    <label><input type="radio" name="q1" value="5"> Às vezes (5 Pts)</label>
-                    <label><input type="radio" name="q1" value="0"> Nunca (0 Pts)</label>
-                    <label><input type="radio" name="q1" value="-1" checked> Não sei</label>
-                </div>
-                <div class="question">
-                    <p>2. A iluminação em cômodos e salas desocupadas permanece apagada?</p>
-                    <label><input type="radio" name="q2" value="10"> Sempre (10 Pts)</label>
-                    <label><input type="radio" name="q2" value="5"> Às vezes (5 Pts)</label>
-                    <label><input type="radio" name="q2" value="0"> Nunca (0 Pts)</label>
-                    <label><input type="radio" name="q2" value="-1" checked> Não sei</label>
-                </div>
-                <div class="question">
-                    <p>3. As torneiras são mantidas fechadas durante a higienização?</p>
-                    <label><input type="radio" name="q3" value="10"> Sempre (10 Pts)</label>
-                    <label><input type="radio" name="q3" value="5"> Às vezes (5 Pts)</label>
-                    <label><input type="radio" name="q3" value="0"> Nunca (0 Pts)</label>
-                    <label><input type="radio" name="q3" value="-1" checked> Não sei</label>
-                </div>
-                <div class="question">
-                    <p>4. Há controle sobre o tempo de uso de ar-condicionado?</p>
-                    <label><input type="radio" name="q4" value="10"> Sempre (10 Pts)</label>
-                    <label><input type="radio" name="q4" value="5"> Às vezes (5 Pts)</label>
-                    <label><input type="radio" name="q4" value="0"> Nunca (0 Pts)</label>
-                    <label><input type="radio" name="q4" value="-1" checked> Não sei</label>
-                </div>
-
-                <div class="alert alert-info mt-2">
-                    💡 <strong>Onde encontrar informações técnicas não sabidas?</strong> Consulte a conta de energia mensal do imóvel ou o manual do fabricante dos seus aparelhos de TI.
-                </div>
-
-                <button class="st-btn mt-2" onclick="calcularDiagnostico()">Consolidar Pontuação do Diagnóstico</button>
-                <div id="resultado-diagnostico" style="margin-top: 15px;"></div>
-            </section>
-
-            <!-- Tab: Vazamentos -->
-            <section id="tab-vazamentos" class="tab-content">
-                <h2>🔍 Auditoria de Perdas e Vazamentos Hídricos</h2>
-                
-                <div style="margin-bottom: 15px;">
-                    <label style="display:block; margin-bottom: 5px;">Ponto de Anomalia Detectado</label>
-                    <select id="vaz-local" style="width: 100%; max-width: 400px; padding: 8px; border-radius: 6px;">
-                        <option value="Torneira">Torneira</option>
-                        <option value="Caixa Acoplada / Vaso Sanitário">Caixa Acoplada / Vaso Sanitário</option>
-                        <option value="Chuveiro">Chuveiro</option>
-                    </select>
-                </div>
-
-                <div style="margin-bottom: 15px;">
-                    <label style="display:block; margin-bottom: 5px;">Intensidade do Gotejamento (Escala 1 a 10): <span id="vaz-gotas-val">2</span></label>
-                    <input type="range" id="vaz-gotas" min="1" max="10" value="2" style="max-width: 400px; width: 100%;">
-                </div>
-
-                <p id="vaz-resultado">Perda Estimada: <strong>1800 Litros / mês</strong> (Impacto orçamentário: R$ 21,60/mês)</p>
-
-                <button class="st-btn" onclick="registrarVazamento()">Registrar Ocorrência na Auditoria</button>
-
-                <div id="vaz-historico" style="margin-top: 20px;"></div>
-            </section>
-
-            <!-- Tab: Relatórios -->
-            <section id="tab-relatorio" class="tab-content">
-                <h2>📄 Emissão do Laudo Técnico (PDF)</h2>
-                <p>Gere o relatório oficial consolidando os parâmetros informados, pegada de carbono e metas:</p>
-                
-                <button class="st-btn" onclick="gerarPDF()">📥 Emitir Relatório Técnico em PDF</button>
-            </section>
-
-        </main>
-    </div>
-
-    <!-- Widget Aero Flutuante -->
-    <a href="#" class="aero-widget-link" id="btn-aero-float" title="Clique para abrir o Chat Aero">
-        <div class="aero-bubble">Olá, sou o Aero</div>
-        <div class="aero-avatar">🤖</div>
-    </a>
+            </div>
+        </div>
+    </section>
 
     <script src="app.js"></script>
 </body>
