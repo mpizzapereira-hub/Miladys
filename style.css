@@ -1,27 +1,70 @@
 @import url('https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;800;900&display=swap');
 
 :root {
-    --bg-eco: #0F172A;
+    --bg-eco: #0D2117;
+    --bg-eco-gradient: radial-gradient(circle at 50% 30%, #153826 0%, #091710 100%);
     --bg-polluted: #2E2E3A;
     --text-main: #F8FAFC;
-    --text-muted: #94A3B8;
+    --text-muted: #9BB5A7;
     --primary: #10B981;
     --secondary: #3B82F6;
     --warning: #F59E0B;
     --danger: #EF4444;
-    --card-bg: rgba(30, 41, 59, 0.7);
-    --border: rgba(51, 65, 85, 0.8);
+    --card-bg: rgba(18, 41, 30, 0.75);
+    --border: rgba(43, 88, 64, 0.6);
 }
 
 * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Nunito', sans-serif; }
-body { background-color: var(--bg-eco); color: var(--text-main); overflow-x: hidden; transition: background-color 1s ease; }
-body.theme-polluted { background-color: var(--bg-polluted); }
+body { 
+    background-color: var(--bg-eco); 
+    background-image: var(--bg-eco-gradient);
+    background-attachment: fixed;
+    color: var(--text-main); 
+    overflow-x: hidden; 
+    transition: background-color 1s ease; 
+}
+body.theme-polluted { background-color: var(--bg-polluted); background-image: none; }
 .text-center { text-align: center; }
 
 /* Telas Gerais */
 .screen { display: none; min-height: 100vh; padding: 40px; opacity: 0; transition: opacity 0.5s ease; }
 .screen.active { display: flex; flex-direction: column; opacity: 1; }
 #screen-welcome, #screen-quiz, #screen-loading { justify-content: center; align-items: center; }
+#screen-welcome { position: relative; text-align: center; padding-bottom: 70px; }
+
+.welcome-container {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    text-align: center;
+    max-width: 720px;
+    width: 100%;
+}
+.welcome-container p {
+    text-align: center;
+    max-width: 620px;
+    margin: 0 auto 30px auto;
+    font-size: 1.15rem;
+    line-height: 1.6;
+}
+.welcome-container .btn-giant {
+    margin: 0 auto;
+}
+.welcome-credits {
+    position: absolute;
+    bottom: 25px;
+    left: 50%;
+    transform: translateX(-50%);
+    font-size: 0.95rem;
+    font-weight: 400;
+    color: #A7F3D0;
+    opacity: 0.7;
+    letter-spacing: 0.5px;
+    font-style: italic;
+    white-space: nowrap;
+    pointer-events: none;
+}
 
 h1 { font-size: 3.5rem; color: var(--primary); font-weight: 900; margin-bottom: 10px; text-align:center;}
 h2 { font-size: 2.2rem; margin-bottom: 20px; text-align: center; line-height: 1.2; }
@@ -83,7 +126,7 @@ p { font-size: 1.1rem; color: var(--text-muted); }
 .tab-link.active { background: var(--primary); color: #fff; border-color: var(--primary); }
 
 .dash-content-area {
-    background: rgba(15, 23, 42, 0.6); border-radius: 0 0 20px 20px; border: 1px solid var(--border);
+    background: rgba(12, 28, 20, 0.7); border-radius: 0 0 20px 20px; border: 1px solid var(--border);
     border-top: none; padding: 25px; flex-grow: 1; min-height: 550px;
 }
 .tab-content { display: none; animation: slideIn 0.3s ease; }
