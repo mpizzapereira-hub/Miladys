@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>EcoTwin | Modo FECART (Completo)</title>
-    <link rel="stylesheet" href="style.css?v=7">
+    <link rel="stylesheet" href="style.css?v=8">
     
     <!-- Bibliotecas Externas -->
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
@@ -22,10 +22,84 @@
 
     <!-- Tela 1: Boas Vindas -->
     <section id="screen-welcome" class="screen active">
+        <!-- Plantas Decorativas nos Cantos Superiores -->
+        <div class="corner-plant corner-plant-left" aria-hidden="true">
+            <svg viewBox="0 0 240 240" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <defs>
+                    <linearGradient id="leafG1" x1="0%" y1="0%" x2="100%" y2="100%">
+                        <stop offset="0%" stop-color="#34D399"/>
+                        <stop offset="100%" stop-color="#047857"/>
+                    </linearGradient>
+                    <linearGradient id="leafG2" x1="0%" y1="0%" x2="100%" y2="100%">
+                        <stop offset="0%" stop-color="#10B981"/>
+                        <stop offset="100%" stop-color="#064E3B"/>
+                    </linearGradient>
+                    <linearGradient id="leafG3" x1="0%" y1="0%" x2="100%" y2="100%">
+                        <stop offset="0%" stop-color="#6EE7B7"/>
+                        <stop offset="100%" stop-color="#059669"/>
+                    </linearGradient>
+                </defs>
+                <path d="M-5,-5 C35,45 65,115 55,225" stroke="#064E3B" stroke-width="4.5" stroke-linecap="round"/>
+                <path d="M-5,-5 C75,25 155,65 225,85" stroke="#047857" stroke-width="3.5" stroke-linecap="round"/>
+                <path d="M-5,-5 C45,65 110,135 155,185" stroke="#065F46" stroke-width="3" stroke-linecap="round"/>
+                <path d="M0,0 C32,45 62,88 46,145 C28,118 8,92 0,72 Z" fill="url(#leafG2)"/>
+                <path d="M0,0 Q26,55 46,145" stroke="#A7F3D0" stroke-width="1.2" opacity="0.6"/>
+                <path d="M0,0 C55,18 118,38 175,48 C128,58 78,54 22,38 Z" fill="url(#leafG1)"/>
+                <path d="M0,0 Q88,28 175,48" stroke="#A7F3D0" stroke-width="1.2" opacity="0.6"/>
+                <path d="M0,0 C58,48 112,102 138,168 C100,158 68,125 26,82 Z" fill="url(#leafG3)"/>
+                <path d="M0,0 Q75,82 138,168" stroke="#ECFDF5" stroke-width="1.2" opacity="0.5"/>
+                <path d="M38,72 C75,82 102,115 108,138 C86,132 65,115 38,72 Z" fill="url(#leafG1)"/>
+                <path d="M52,118 C62,158 70,198 66,220 C54,192 45,160 52,118 Z" fill="url(#leafG2)"/>
+                <path d="M98,28 C145,34 192,60 218,82 C186,82 148,66 98,28 Z" fill="url(#leafG3)"/>
+                <path d="M72,98 C108,128 142,152 165,168 C140,165 110,148 72,98 Z" fill="url(#leafG2)"/>
+                <path d="M128,52 C168,72 205,102 225,122 C202,118 168,100 128,52 Z" fill="url(#leafG1)"/>
+                <circle cx="22" cy="125" r="8" fill="#34D399" opacity="0.85"/>
+                <circle cx="102" cy="60" r="9" fill="#10B981" opacity="0.85"/>
+                <circle cx="128" cy="120" r="10" fill="#059669" opacity="0.85"/>
+                <circle cx="48" cy="180" r="7" fill="#6EE7B7" opacity="0.85"/>
+                <circle cx="185" cy="72" r="7.5" fill="#34D399" opacity="0.85"/>
+            </svg>
+        </div>
+
+        <div class="corner-plant corner-plant-right" aria-hidden="true">
+            <svg viewBox="0 0 240 240" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <path d="M-5,-5 C35,45 65,115 55,225" stroke="#064E3B" stroke-width="4.5" stroke-linecap="round"/>
+                <path d="M-5,-5 C75,25 155,65 225,85" stroke="#047857" stroke-width="3.5" stroke-linecap="round"/>
+                <path d="M-5,-5 C45,65 110,135 155,185" stroke="#065F46" stroke-width="3" stroke-linecap="round"/>
+                <path d="M0,0 C32,45 62,88 46,145 C28,118 8,92 0,72 Z" fill="url(#leafG2)"/>
+                <path d="M0,0 Q26,55 46,145" stroke="#A7F3D0" stroke-width="1.2" opacity="0.6"/>
+                <path d="M0,0 C55,18 118,38 175,48 C128,58 78,54 22,38 Z" fill="url(#leafG1)"/>
+                <path d="M0,0 Q88,28 175,48" stroke="#A7F3D0" stroke-width="1.2" opacity="0.6"/>
+                <path d="M0,0 C58,48 112,102 138,168 C100,158 68,125 26,82 Z" fill="url(#leafG3)"/>
+                <path d="M0,0 Q75,82 138,168" stroke="#ECFDF5" stroke-width="1.2" opacity="0.5"/>
+                <path d="M38,72 C75,82 102,115 108,138 C86,132 65,115 38,72 Z" fill="url(#leafG1)"/>
+                <path d="M52,118 C62,158 70,198 66,220 C54,192 45,160 52,118 Z" fill="url(#leafG2)"/>
+                <path d="M98,28 C145,34 192,60 218,82 C186,82 148,66 98,28 Z" fill="url(#leafG3)"/>
+                <path d="M72,98 C108,128 142,152 165,168 C140,165 110,148 72,98 Z" fill="url(#leafG2)"/>
+                <path d="M128,52 C168,72 205,102 225,122 C202,118 168,100 128,52 Z" fill="url(#leafG1)"/>
+                <circle cx="22" cy="125" r="8" fill="#34D399" opacity="0.85"/>
+                <circle cx="102" cy="60" r="9" fill="#10B981" opacity="0.85"/>
+                <circle cx="128" cy="120" r="10" fill="#059669" opacity="0.85"/>
+                <circle cx="48" cy="180" r="7" fill="#6EE7B7" opacity="0.85"/>
+                <circle cx="185" cy="72" r="7.5" fill="#34D399" opacity="0.85"/>
+            </svg>
+        </div>
+
         <div class="welcome-container">
             <h1 class="bounce">🌱 EcoTwin</h1>
             <h2>O Gêmeo Digital da sua Sustentabilidade</h2>
-            <p>Descubra o impacto real da sua casa no planeta e como pequenas atitudes salvam árvores!</p>
+            
+            <!-- Breve Explicação do Projeto em 7 Linhas -->
+            <div class="welcome-explanation">
+                <p class="exp-line"><i class="fas fa-seedling"></i> <span><strong>Gêmeo Digital:</strong> Modelo virtual inteligente focado em sustentabilidade e eficiência ecológica.</span></p>
+                <p class="exp-line"><i class="fas fa-bolt"></i> <span><strong>Diagnóstico Energético:</strong> Analisa consumo elétrico, hábitos de água e rotina residencial.</span></p>
+                <p class="exp-line"><i class="fas fa-globe-americas"></i> <span><strong>Pegada de Carbono:</strong> Calcula com rigor científico as emissões anuais de CO₂ do seu lar.</span></p>
+                <p class="exp-line"><i class="fas fa-tree"></i> <span><strong>Compensação Florestal:</strong> Projeta em 3D as árvores nativas necessárias para neutralizar seu impacto.</span></p>
+                <p class="exp-line"><i class="fas fa-brain"></i> <span><strong>Inteligência Artificial:</strong> Simula projeções de tendências e metas personalizadas de economia.</span></p>
+                <p class="exp-line"><i class="fas fa-gamepad"></i> <span><strong>Interatividade & Quiz:</strong> Desafia visitantes com 10 questões ecológicas e auditoria de vazamentos.</span></p>
+                <p class="exp-line"><i class="fas fa-award"></i> <span><strong>Impacto Real:</strong> Uma ferramenta prática para conscientizar, engajar e transformar atitudes!</span></p>
+            </div>
+
             <button class="btn-giant" onclick="showScreen('screen-quiz')">COMEÇAR O TESTE <i class="fas fa-arrow-right"></i></button>
         </div>
         <div class="welcome-credits">projeto by Maria Laura e Julia Aguiar</div>

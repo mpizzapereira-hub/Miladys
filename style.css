@@ -30,7 +30,50 @@ body.theme-polluted { background-color: var(--bg-polluted); background-image: no
 .screen { display: none; min-height: 100vh; padding: 40px; opacity: 0; transition: opacity 0.5s ease; }
 .screen.active { display: flex; flex-direction: column; opacity: 1; }
 #screen-welcome, #screen-quiz, #screen-loading { justify-content: center; align-items: center; }
-#screen-welcome { position: relative; text-align: center; padding-bottom: 70px; }
+#screen-welcome { position: relative; text-align: center; padding-bottom: 70px; overflow: hidden; }
+
+/* Plantas Decorativas nos Cantos Superiores */
+.corner-plant {
+    position: absolute;
+    top: 0;
+    width: 200px;
+    height: 200px;
+    pointer-events: none;
+    z-index: 5;
+    filter: drop-shadow(0 8px 16px rgba(0, 0, 0, 0.45));
+}
+
+.corner-plant-left {
+    left: 0;
+    transform-origin: top left;
+    animation: plantSwayLeft 7s ease-in-out infinite alternate;
+}
+
+.corner-plant-right {
+    right: 0;
+    transform: scaleX(-1);
+    transform-origin: top right;
+    animation: plantSwayRight 8s ease-in-out infinite alternate;
+}
+
+@keyframes plantSwayLeft {
+    0% { transform: rotate(0deg) scale(1); }
+    50% { transform: rotate(2.5deg) scale(1.02); }
+    100% { transform: rotate(-1deg) scale(0.99); }
+}
+
+@keyframes plantSwayRight {
+    0% { transform: scaleX(-1) rotate(0deg) scale(1); }
+    50% { transform: scaleX(-1) rotate(2.5deg) scale(1.02); }
+    100% { transform: scaleX(-1) rotate(-1deg) scale(0.99); }
+}
+
+@media (max-width: 768px) {
+    .corner-plant {
+        width: 120px;
+        height: 120px;
+    }
+}
 
 .welcome-container {
     display: flex;
@@ -38,16 +81,54 @@ body.theme-polluted { background-color: var(--bg-polluted); background-image: no
     align-items: center;
     justify-content: center;
     text-align: center;
-    max-width: 720px;
+    max-width: 760px;
     width: 100%;
+    z-index: 6;
 }
-.welcome-container p {
+
+/* Caixa de Explicação em 7 Linhas */
+.welcome-explanation {
+    background: rgba(14, 38, 27, 0.72);
+    border: 1px solid rgba(52, 211, 153, 0.28);
+    border-radius: 18px;
+    padding: 18px 24px;
+    margin: 12px auto 26px auto;
+    max-width: 740px;
+    width: 100%;
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.35);
+    backdrop-filter: blur(8px);
+    text-align: left;
+}
+
+.exp-line {
+    font-size: 0.95rem;
+    color: #E2E8F0;
+    line-height: 1.52;
+    margin-bottom: 7px;
+    display: flex;
+    align-items: baseline;
+    gap: 10px;
+}
+
+.exp-line:last-child {
+    margin-bottom: 0;
+    color: #6EE7B7;
+    font-weight: 700;
+}
+
+.exp-line i {
+    color: var(--primary);
+    font-size: 0.85rem;
+    width: 16px;
     text-align: center;
-    max-width: 620px;
-    margin: 0 auto 30px auto;
-    font-size: 1.15rem;
-    line-height: 1.6;
+    flex-shrink: 0;
 }
+
+.exp-line span strong {
+    color: #34D399;
+    font-weight: 700;
+}
+
 .welcome-container .btn-giant {
     margin: 0 auto;
 }
@@ -64,6 +145,7 @@ body.theme-polluted { background-color: var(--bg-polluted); background-image: no
     font-style: italic;
     white-space: nowrap;
     pointer-events: none;
+    z-index: 6;
 }
 
 h1 { font-size: 3.5rem; color: var(--primary); font-weight: 900; margin-bottom: 10px; text-align:center;}
