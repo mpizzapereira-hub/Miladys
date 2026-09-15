@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>EcoTwin | Modo FECART (Completo)</title>
-    <link rel="stylesheet" href="style.css?v=8">
+    <link rel="stylesheet" href="style.css?v=9">
     
     <!-- Bibliotecas Externas -->
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
@@ -236,51 +236,51 @@
                     <p>Cada atividade humana gera uma dívida em dióxido de carbono. Uma árvore nativa absorve cerca de <b>15 kg de CO₂ por ano</b>. Use o simulador abaixo para expandir sua área verde e veja sua <b>Fazendinha 3D</b> evoluir!</p>
                 </div>
 
-                <!-- 1. Simulador de Reflorestamento e Área -->
-                <div class="calc-item mt-3" style="max-width: 900px; margin: 0 auto; text-align: left;">
-                    <h4>🌱 Simulador Interativo de Reflorestamento</h4>
-                    <label>Área disponível para quintal, plantio ou preservação: <strong id="val-area-plantio" style="color:#34D399; font-size:1.4rem;">120 m²</strong></label>
-                    <input type="range" id="inp-area-plantio" min="10" max="3000" value="120" step="10" oninput="updPlantio()" style="width:100%; margin: 15px 0;">
-                    
-                    <div class="metric-row mt-3">
-                        <div class="metric-box" style="padding: 15px;">
-                            <h3>Capacidade de Mudas</h3>
-                            <div class="value" id="out-mudas-capacidade" style="font-size:2rem; color:#34D399;">10</div>
-                            <p>Árvores viáveis</p>
+                <!-- Layout Duplo: Simulador de Reflorestamento e Fazendinha Virtual -->
+                <div class="twin-layout">
+                    <!-- Coluna 1: Simulador Interativo -->
+                    <div class="twin-panel">
+                        <h4 style="color:var(--primary);"><i class="fas fa-seedling"></i> Área de Preservação / Plantio</h4>
+                        <label>Área disponível para quintal ou plantio: <strong id="val-area-plantio" style="color:#34D399; font-size:1.4rem;">120 m²</strong></label>
+                        <input type="range" id="inp-area-plantio" min="10" max="3000" value="120" step="10" oninput="updPlantio()" style="width:100%; margin: 15px 0;">
+                        
+                        <div class="metric-row mt-3">
+                            <div class="metric-box" style="padding: 12px;">
+                                <h3>Capacidade de Mudas</h3>
+                                <div class="value" id="out-mudas-capacidade" style="font-size:1.8rem; color:#34D399;">10</div>
+                                <p>Árvores viáveis</p>
+                            </div>
+                            <div class="metric-box" style="padding: 12px;">
+                                <h3>Absorção Anual</h3>
+                                <div class="value" id="out-mudas-absorcao" style="font-size:1.8rem; color:#3B82F6;">150</div>
+                                <p>kg CO₂e/ano</p>
+                            </div>
+                            <div class="metric-box" style="padding: 12px;">
+                                <h3>Compensação da Pegada</h3>
+                                <div class="value" id="out-mudas-cobertura" style="font-size:1.8rem; color:#F59E0B;">25%</div>
+                                <p>Neutro no plantio</p>
+                            </div>
                         </div>
-                        <div class="metric-box" style="padding: 15px;">
-                            <h3>Absorção Anual</h3>
-                            <div class="value" id="out-mudas-absorcao" style="font-size:2rem; color:#3B82F6;">150</div>
-                            <p>kg CO₂e/ano</p>
-                        </div>
-                        <div class="metric-box" style="padding: 15px;">
-                            <h3>Compensação da Pegada</h3>
-                            <div class="value" id="out-mudas-cobertura" style="font-size:2rem; color:#F59E0B;">25%</div>
-                            <p>Neutro no plantio</p>
-                        </div>
-                    </div>
-                </div>
 
-                <!-- 2. Fazendinha Virtual EcoTwin 3D Real (Three.js WebGL) -->
-                <div class="mt-3">
-                    <h3 class="text-center">🏡 Fazendinha Virtual EcoTwin 3D (Cenário Interativo em Tempo Real)</h3>
-                    <p class="text-center caption">Arraste com o mouse para girar o cenário 3D em 360°! Ao mover o slider de plantio acima, novas árvores 3D brotam ao vivo na sua ilha!</p>
-                    
-                    <div class="farm-3d-wrapper">
-                        <div class="farm-3d-overlay">
-                            <span class="farm-header-badge" id="farm-badge-nivel">Oásis Regenerativo Sustentável</span>
-                            <span class="farm-3d-hint"><i class="fas fa-hand-pointer"></i> Clique e arraste para girar em 3D</span>
-                        </div>
-                        <div id="farm-3d-canvas-container"></div>
-                        <div class="farm-3d-toolbar">
-                            <button class="btn-3d-action" onclick="reset3DCamera()"><i class="fas fa-compress-arrows-alt"></i> Centralizar</button>
-                            <button class="btn-3d-action" id="btn-toggle-spin" onclick="toggle3DAutoRotate()"><i class="fas fa-sync-alt"></i> Giro 360°: ON</button>
+                        <!-- Módulos da Fazenda Desbloqueados -->
+                        <div class="farm-unlocked-grid mt-4" id="farm-grid-elements">
+                            <!-- Cards de módulos preenchidos dinamicamente via JS -->
                         </div>
                     </div>
 
-                    <!-- Módulos da Fazenda Desbloqueados -->
-                    <div class="farm-unlocked-grid mt-3" id="farm-grid-elements">
-                        <!-- Cards de módulos preenchidos dinamicamente via JS -->
+                    <!-- Coluna 2: Fazendinha Virtual EcoTwin 3D Real (Three.js WebGL) -->
+                    <div class="twin-panel" style="padding:0; overflow:hidden;">
+                        <div class="farm-3d-wrapper" style="margin:0; border:none; border-radius:18px; height: 100%; min-height: 480px;">
+                            <div class="farm-3d-overlay">
+                                <span class="farm-header-badge" id="farm-badge-nivel">Oásis Regenerativo Sustentável</span>
+                                <span class="farm-3d-hint"><i class="fas fa-hand-pointer"></i> Clique e arraste para girar em 3D</span>
+                            </div>
+                            <div id="farm-3d-canvas-container"></div>
+                            <div class="farm-3d-toolbar">
+                                <button class="btn-3d-action" onclick="reset3DCamera()"><i class="fas fa-compress-arrows-alt"></i> Centralizar</button>
+                                <button class="btn-3d-action" id="btn-toggle-spin" onclick="toggle3DAutoRotate()"><i class="fas fa-sync-alt"></i> Giro 360°: ON</button>
+                            </div>
+                        </div>
                     </div>
                 </div>
 

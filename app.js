@@ -253,6 +253,59 @@ function updCalc() {
     renderDelta('d-carne', state.calc_carne, 3, 'dias');
     renderDelta('d-lixo', state.calc_lixo, 4, 'sacos');
     renderDelta('d-transp', state.calc_transp, 15, 'km');
+
+    // --- Cálculo Dinâmico de Impacto Global ---
+    // Valores base do quiz inicial
+    const co2_energia = state.energia_kwh * 0.085 * 12;
+    const co2_base_moradores = state.moradores * 160;
+
+    // Modificadores de Hábitos (em kg CO2/ano) comparado à média
+    const mod_banho = (state.calc_banho - 12) * 5;
+    const mod_carne = (state.calc_carne - 3) * 45;
+    const mod_lixo = (state.calc_lixo - 4) * 20;
+    const mod_transp = (state.calc_transp - 15) * 12;
+
+    state.co2 = co2_energia + co2_base_moradores + mod_banho + mod_carne + mod_lixo + mod_transp;
+    if (state.co2 < 0) state.co2 = 0; // Prevenir negativo
+    
+    state.arvores = Math.round(state.co2 / 15);
+
+    // Atualiza elementos globais e gráficos se já estiverem inicializados
+    const outCo2 = document.getElementById('out-co2');
+    if (outCo2 && outCo2.innerText !== "0") {
+        outCo2.innerHTML = Math.round(state.co2).toLocaleString('pt-BR');
+    }
+    const outArvores = document.getElementById('out-arvores');
+    if (outArvores && outArvores.innerText !== "0") {
+        outArvores.innerHTML = state.arvores.toLocaleString('pt-BR');
+    }
+
+    const badge = document.getElementById('rank-badge');
+    if (badge) {
+        if (state.co2 > 1000) { 
+            badge.innerText = "🚨 Alerta Vermelho"; 
+            badge.style.backgroundColor = "#EF4444"; 
+        } else if (state.co2 > 500) { 
+            badge.innerText = "⚖️ Consumidor Mediano"; 
+            badge.style.backgroundColor = "#F59E0B"; 
+        } else { 
+            badge.innerText = "🌟 Herói Verde"; 
+            badge.style.backgroundColor = "#10B981"; 
+        }
+    }
+
+    if (typeof chartDonut !== 'undefined' && chartDonut) {
+        chartDonut.data.datasets[0].data = [co2_energia, state.co2 * 0.35, state.co2 * 0.20];
+        chartDonut.update();
+    }
+    if (typeof chartBar !== 'undefined' && chartBar) {
+        const meta_red = state.co2 * 0.85;
+        chartBar.data.datasets[0].data = [state.co2, meta_red];
+        chartBar.update();
+    }
+    
+    atualizarTwin();
+    updPlantio(); // Refresh farm percentage as well
 }
 
 function renderDelta(id, val, media, unit) {
@@ -361,9 +414,6 @@ function updPlantio() {
     if (typeof render3DTrees === 'function') {
         render3DTrees();
     }
-
-    // Bioma Florestal com Cards 3D Realistas
-    atualizarTwin();
 }
 
 function atualizarTwin() {
@@ -380,7 +430,7 @@ function atualizarTwin() {
         document.getElementById('eco-status').innerText = `Seu impacto é brando, compensado por ${state.arvores} árvores anuais. 🏞️`;
     }
 
-    const qtde = Math.min(state.arvores, 48);
+    const qtde = state.arvores; // Usando a quantidade exata
     const tipos = [
         { icon: "🌲", nome: "Pinheiro" },
         { icon: "🌳", nome: "Ipê Amarelo" },
@@ -392,10 +442,10 @@ function atualizarTwin() {
         const item = tipos[i % tipos.length];
         const tile = document.createElement('div');
         tile.className = 'tree-3d-tile';
-        tile.style.animationDelay = (i * 15) + 'ms';
+        tile.style.animationDelay = ((i % 50) * 15) + 'ms';
         tile.innerHTML = `
             <span class="tree-3d-icon">${state.co2 > 1000 ? "🍂" : item.icon}</span>
-            <div class="tree-3d-tag">#${i + 1}</div>
+            <div class="tree-3d-tag">#${i + 1} - ${item.nome}</div>
             <div style="font-size:0.6rem; color:#A7F3D0; font-weight:700;">15kg/ano</div>
         `;
         view.appendChild(tile);
