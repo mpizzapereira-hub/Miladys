@@ -192,7 +192,7 @@ function initDashboard() {
                         }
                     ]
                 },
-                options: { responsive: true }
+                options: { responsive: true, maintainAspectRatio: false }
             });
             const iaAlert = document.getElementById('ia-alert');
             if (iaAlert) {
