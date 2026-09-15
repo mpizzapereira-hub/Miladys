@@ -203,6 +203,10 @@ function initDashboard() {
     // Inicializa Calculadora Pessoal
     updCalc();
 
+    // Inicializa Calculadora de Vazamentos
+    const vazSlider = document.getElementById('vaz-int');
+    if (vazSlider) updVazCalc(vazSlider.value);
+
     // Inicializa Three.js se o container estiver pronto
     setTimeout(initThreeFarm, 150);
 }
@@ -958,19 +962,54 @@ function sendChat(btnMsg) {
         setTimeout(() => {
             let resp = "";
             const txt = text.toLowerCase();
-            if(txt.includes('energia')) {
-                resp = `Você consome **${state.energia_kwh} kWh/mês**. Se desligar aparelhos em standby e controlar ar-condicionado, sua meta de 15% economiza cerca de R$ ${(state.energia_kwh * 0.15 * 0.75).toFixed(2)} todo mês!`;
-            } else if(txt.includes('fazendinha') || txt.includes('3d') || txt.includes('plantio')) {
-                resp = `Sua fazendinha 3D está no **${state.nivel_fazenda}**! Com seus ${state.area_plantio} m² simulados, você abriga ${state.mudas_capacidade} árvores, absorvendo ${state.mudas_absorcao} kg de CO₂/ano. Arraste a maquete 3D para ver todos os ângulos!`;
-            } else if(txt.includes('banho') || txt.includes('água')) {
-                resp = `Seu banho diário informado é de **${state.calc_banho} minutos**. Reduzir 2 minutinhos poupa mais de 540 litros de água tratada por mês por pessoa!`;
+            
+            // Variedade de Respostas baseadas em contexto
+            const respostasEnergia = [
+                `Você sabia que consome em média **${state.energia_kwh} kWh/mês**? Se reduzirmos apenas 15%, sua pegada cairá significativamente. Tente aproveitar mais a luz do sol!`,
+                `Sua meta atual foca em reduzir **${state.energia_kwh} kWh**. Tirar eletrônicos do modo stand-by já ajuda muito. Que tal começar por aí?`,
+                `Em termos de energia, se mantiver os aparelhos desligados fora de uso, sua projeção de IA mostra que podemos estabilizar seu consumo e economizar R$ ${(state.energia_kwh * 0.15 * 0.75).toFixed(2)} por mês!`
+            ];
+            
+            const respostasFazenda = [
+                `Uau, sua fazendinha está no nível: **${state.nivel_fazenda}**! Com ${state.area_plantio} m² e ${state.mudas_capacidade} árvores, você absorve ${state.mudas_absorcao} kg de CO₂/ano. Tente interagir girando a maquete!`,
+                `A Fazendinha é o seu "Gêmeo Digital" ambiental. No momento ela suporta ${state.mudas_capacidade} árvores. Gire a câmera 3D para ver os detalhes da natureza crescendo!`,
+                `Através da sua área de plantio (${state.area_plantio} m²), você desbloqueia módulos sustentáveis. Explore o painel da fazenda e veja como a natureza te recompensa visualmente!`
+            ];
+            
+            const respostasBanho = [
+                `Seu banho diário reportado é de **${state.calc_banho} minutos**. Reduzir 2 minutos já poupa milhares de litros por ano!`,
+                `Atenção à água! Com seus banhos de ${state.calc_banho} min, estamos falando de muita energia no chuveiro. Desligar a água ao se ensaboar já faz a diferença.`,
+                `Água e energia andam juntas. Se formos diminuir os ${state.calc_banho} min de banho, estaremos ajudando na conta de luz e na conservação hídrica também.`
+            ];
+
+            const respostasVazamento = [
+                `Vazamentos são silenciosos! Lembre-se que registrar vazamentos na nossa aba ajuda a auditar quanto de água tratada você está perdendo.`,
+                `Um pequeno filete de água escapando na privada desperdiça milhares de litros. Fique atento e use a ferramenta "Registro de Vazamentos"!`
+            ];
+
+            const respostasDefault = [
+                `Interessante... Como copiloto EcoTwin, posso ajudar com cálculos de CO₂, energia, dicas sobre a Fazenda 3D, banhos ou até sobre seus vazamentos. O que prefere explorar?`,
+                `Excelente ponto. Lembre-se que você pode gerar seu Laudo PDF oficial com todos os resultados ou testar seu nível de conhecimento no Quiz 10 perguntas!`,
+                `Sua pegada total é de ${state.co2.toFixed(1)} kg CO₂e. Posso te ajudar a entender melhor esse número se quiser perguntar sobre 'energia', 'banho', ou 'fazendinha'.`
+            ];
+
+            function getRandom(arr) { return arr[Math.floor(Math.random() * arr.length)]; }
+
+            if (txt.includes('energia') || txt.includes('luz') || txt.includes('kwh')) {
+                resp = getRandom(respostasEnergia);
+            } else if (txt.includes('fazendinha') || txt.includes('3d') || txt.includes('plantio') || txt.includes('arvore') || txt.includes('árvore')) {
+                resp = getRandom(respostasFazenda);
+            } else if (txt.includes('banho') || txt.includes('água') || txt.includes('agua')) {
+                resp = getRandom(respostasBanho);
+            } else if (txt.includes('vazamento') || txt.includes('torneira') || txt.includes('desperdício')) {
+                resp = getRandom(respostasVazamento);
             } else {
-                resp = "Como copiloto Aero, recomendo testar o Quiz de 10 perguntas e emitir seu laudo PDF oficial para a feira!";
+                resp = getRandom(respostasDefault);
             }
             
             win.innerHTML += `<div class="chat-message assistant"><strong>🤖 Aero:</strong> ${resp}</div>`;
             win.scrollTop = win.scrollHeight;
-        }, 500);
+        }, 600);
     }
 }
 
@@ -1064,10 +1103,28 @@ function verificarQuiz10() {
 // =============================================================================
 // ABA 7: VAZAMENTOS
 // =============================================================================
+function updVazCalc(val) {
+    document.getElementById('vaz-int-val').innerText = val;
+    const dia = val * 25; // 25 litros por dia por ponto de severidade
+    const mes = dia * 30;
+    const hora = dia / 24;
+    
+    document.getElementById('vaz-hora').innerText = `~${Math.round(hora)} L`;
+    document.getElementById('vaz-dia').innerText = `${dia} L`;
+    document.getElementById('vaz-mes').innerText = `${mes.toLocaleString('pt-BR')} L`;
+    
+    document.getElementById('vaz-didatico').innerText = `${mes.toLocaleString('pt-BR')} litros/mês`;
+    
+    // Um banho de 5 min consome aprox 45 litros (chuveiro normal)
+    const banhos = Math.floor(mes / 45);
+    document.getElementById('vaz-didatico-banhos').innerText = banhos;
+}
+
 function registrarVazamento() {
     const local = document.getElementById('vaz-local').value;
     const int = document.getElementById('vaz-int').value;
-    const perda = int * 25 * 30; // Litros por mes
+    const dia = int * 25;
+    const perda = dia * 30; // Litros por mes
     const custo = (perda * 0.018).toFixed(2);
 
     state.vazamentos.push({

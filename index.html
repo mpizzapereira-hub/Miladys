@@ -297,10 +297,18 @@
             <div id="tab-ia" class="tab-content">
                 <h3 class="text-center">Projeção Inteligente (Regressão Linear)</h3>
                 <p class="text-center caption">Baseado no seu consumo mensal atual, a IA projeta seus próximos meses.</p>
-                <div class="chart-box" style="max-width: 800px; margin: 0 auto;">
-                    <canvas id="chart-ml"></canvas>
+                
+                <div class="twin-layout" style="align-items: start; max-width:1000px; margin: 20px auto;">
+                    <div class="chart-box" style="width:100%; margin: 0 auto; height: 100%;">
+                        <canvas id="chart-ml"></canvas>
+                    </div>
+                    <div class="twin-panel" style="text-align:left;">
+                        <h4 style="color:var(--primary); margin-bottom:10px;"><i class="fas fa-brain"></i> O que é Regressão Linear?</h4>
+                        <p style="font-size:0.95rem; line-height:1.5;">A <strong>Regressão Linear</strong> é um algoritmo clássico de Machine Learning. Ela analisa um conjunto de dados históricos (o seu consumo dos meses passados) e desenha uma "linha de tendência" matemática que melhor se ajusta a esses pontos.</p>
+                        <p style="font-size:0.95rem; line-height:1.5; margin-top:10px;">Ao estender essa linha para o futuro, o modelo consegue <strong>prever</strong> qual será o seu consumo nos próximos meses se você mantiver seus hábitos atuais. O nosso sistema a utiliza para ajudar você a visualizar o impacto a longo prazo!</p>
+                        <div class="alert mt-3" id="ia-alert" style="font-size:0.9rem;"></div>
+                    </div>
                 </div>
-                <div class="alert mt-3 text-center" id="ia-alert"></div>
             </div>
 
             <!-- 5. Aba Chat Aero -->
@@ -430,9 +438,30 @@
                         </select>
                         <br><br>
                         <label>Severidade (Escala 1 a 10): <strong id="vaz-int-val">4</strong></label>
-                        <input type="range" id="vaz-int" min="1" max="10" value="4" class="giant-slider" oninput="document.getElementById('vaz-int-val').innerText=this.value">
-                        <br><br>
-                        <button class="btn-giant btn-secondary" style="font-size:1.2rem; width:100%;" onclick="registrarVazamento()">➕ Registrar Ocorrência</button>
+                        <input type="range" id="vaz-int" min="1" max="10" value="4" class="giant-slider" oninput="updVazCalc(this.value)">
+                        
+                        <div class="metric-row mt-3" style="gap:10px;">
+                            <div class="metric-box" style="padding: 10px;">
+                                <h3 style="font-size:0.8rem;">Por Hora</h3>
+                                <div class="value" id="vaz-hora" style="font-size:1.3rem; color:#EF4444;">~4 L</div>
+                            </div>
+                            <div class="metric-box" style="padding: 10px;">
+                                <h3 style="font-size:0.8rem;">Por Dia</h3>
+                                <div class="value" id="vaz-dia" style="font-size:1.3rem; color:#EF4444;">100 L</div>
+                            </div>
+                            <div class="metric-box" style="padding: 10px;">
+                                <h3 style="font-size:0.8rem;">Por Mês</h3>
+                                <div class="value" id="vaz-mes" style="font-size:1.3rem; color:#EF4444;">3.000 L</div>
+                            </div>
+                        </div>
+
+                        <div class="alert mt-3" style="font-size: 0.9rem; text-align:left; background:rgba(239, 68, 68, 0.1); border-color:#EF4444;">
+                            <strong>💧 O que isso significa na prática?</strong><br>
+                            Um buraco de apenas 2 milímetros em um encanamento desperdiça milhares de litros. Com <span id="vaz-didatico">3.000 litros/mês</span>, você poderia tomar <strong><span id="vaz-didatico-banhos">60</span> banhos</strong> de 5 minutos! O custo financeiro e o impacto nos reservatórios locais são alarmantes.
+                        </div>
+
+                        <br>
+                        <button class="btn-giant btn-secondary" style="font-size:1.2rem; width:100%; margin-top:5px;" onclick="registrarVazamento()">➕ Registrar Ocorrência</button>
                     </div>
                     <div class="half-box">
                         <h4>📋 Histórico de Ocorrências Auditadas</h4>
