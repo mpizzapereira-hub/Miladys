@@ -14,6 +14,10 @@ const state = {
     calc_carne: 4,
     calc_lixo: 5,
     calc_transp: 20,
+    calc_ar: 3,
+    calc_delivery: 3,
+    calc_voo: 1,
+    calc_lavar: 4,
     quiz_score: 0,
     vazamentos: []
 };
@@ -241,22 +245,38 @@ function updCalc() {
     const cEl = document.getElementById('calc-carne');
     const lEl = document.getElementById('calc-lixo');
     const tEl = document.getElementById('calc-transp');
+    const arEl = document.getElementById('calc-ar');
+    const delEl = document.getElementById('calc-delivery');
+    const vooEl = document.getElementById('calc-voo');
+    const lavEl = document.getElementById('calc-lavar');
 
     if (bEl) state.calc_banho = parseInt(bEl.value);
     if (cEl) state.calc_carne = parseInt(cEl.value);
     if (lEl) state.calc_lixo = parseInt(lEl.value);
     if (tEl) state.calc_transp = parseInt(tEl.value);
+    if (arEl) state.calc_ar = parseInt(arEl.value);
+    if (delEl) state.calc_delivery = parseInt(delEl.value);
+    if (vooEl) state.calc_voo = parseInt(vooEl.value);
+    if (lavEl) state.calc_lavar = parseInt(lavEl.value);
 
     if (document.getElementById('v-banho')) document.getElementById('v-banho').innerText = state.calc_banho;
     if (document.getElementById('v-carne')) document.getElementById('v-carne').innerText = state.calc_carne;
     if (document.getElementById('v-lixo')) document.getElementById('v-lixo').innerText = state.calc_lixo;
     if (document.getElementById('v-transp')) document.getElementById('v-transp').innerText = state.calc_transp;
+    if (document.getElementById('v-ar')) document.getElementById('v-ar').innerText = state.calc_ar;
+    if (document.getElementById('v-delivery')) document.getElementById('v-delivery').innerText = state.calc_delivery;
+    if (document.getElementById('v-voo')) document.getElementById('v-voo').innerText = state.calc_voo;
+    if (document.getElementById('v-lavar')) document.getElementById('v-lavar').innerText = state.calc_lavar;
 
     // Médias Brasileiras
     renderDelta('d-banho', state.calc_banho, 12, 'min');
     renderDelta('d-carne', state.calc_carne, 3, 'dias');
     renderDelta('d-lixo', state.calc_lixo, 4, 'sacos');
     renderDelta('d-transp', state.calc_transp, 15, 'km');
+    renderDelta('d-ar', state.calc_ar, 2, 'h');
+    renderDelta('d-delivery', state.calc_delivery, 2, 'entregas');
+    renderDelta('d-voo', state.calc_voo, 1, 'voos');
+    renderDelta('d-lavar', state.calc_lavar, 3, 'ciclos');
 
     // --- Cálculo Dinâmico de Impacto Global ---
     // Valores base do quiz inicial
@@ -268,8 +288,12 @@ function updCalc() {
     const mod_carne = (state.calc_carne - 3) * 45;
     const mod_lixo = (state.calc_lixo - 4) * 20;
     const mod_transp = (state.calc_transp - 15) * 12;
+    const mod_ar = (state.calc_ar - 2) * 15;
+    const mod_delivery = (state.calc_delivery - 2) * 15;
+    const mod_voo = (state.calc_voo - 1) * 150;
+    const mod_lavar = (state.calc_lavar - 3) * 5;
 
-    state.co2 = co2_energia + co2_base_moradores + mod_banho + mod_carne + mod_lixo + mod_transp;
+    state.co2 = co2_energia + co2_base_moradores + mod_banho + mod_carne + mod_lixo + mod_transp + mod_ar + mod_delivery + mod_voo + mod_lavar;
     if (state.co2 < 0) state.co2 = 0; // Prevenir negativo
     
     state.arvores = Math.round(state.co2 / 15);

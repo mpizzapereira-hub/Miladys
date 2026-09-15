@@ -225,6 +225,30 @@
                         <div class="calc-res"><span id="v-transp">20</span> km</div>
                         <div class="calc-delta" id="d-transp"></div>
                     </div>
+                    <div class="calc-item">
+                        <label><i class="fas fa-snowflake"></i> Ar-Condicionado (horas/dia)</label>
+                        <input type="range" id="calc-ar" min="0" max="24" value="3" oninput="updCalc()">
+                        <div class="calc-res"><span id="v-ar">3</span> horas</div>
+                        <div class="calc-delta" id="d-ar"></div>
+                    </div>
+                    <div class="calc-item">
+                        <label><i class="fas fa-shopping-bag"></i> Delivery & Compras (entregas/sem)</label>
+                        <input type="range" id="calc-delivery" min="0" max="14" value="3" oninput="updCalc()">
+                        <div class="calc-res"><span id="v-delivery">3</span> entregas</div>
+                        <div class="calc-delta" id="d-delivery"></div>
+                    </div>
+                    <div class="calc-item">
+                        <label><i class="fas fa-plane"></i> Viagens Aéreas (voos/ano)</label>
+                        <input type="range" id="calc-voo" min="0" max="20" value="1" oninput="updCalc()">
+                        <div class="calc-res"><span id="v-voo">1</span> voos</div>
+                        <div class="calc-delta" id="d-voo"></div>
+                    </div>
+                    <div class="calc-item">
+                        <label><i class="fas fa-tshirt"></i> Máquina de Lavar (ciclos/sem)</label>
+                        <input type="range" id="calc-lavar" min="0" max="15" value="4" oninput="updCalc()">
+                        <div class="calc-res"><span id="v-lavar">4</span> ciclos</div>
+                        <div class="calc-delta" id="d-lavar"></div>
+                    </div>
                 </div>
                 <p class="caption text-center mt-3">* Indicadores coloridos comparam em tempo real sua rotina com a média nacional brasileira (IBGE/Sabesp).</p>
             </div>
@@ -298,15 +322,15 @@
                 <h3 class="text-center">Projeção Inteligente (Regressão Linear)</h3>
                 <p class="text-center caption">Baseado no seu consumo mensal atual, a IA projeta seus próximos meses.</p>
                 
-                <div class="twin-layout" style="align-items: start; max-width:1000px; margin: 20px auto;">
-                    <div class="chart-box" style="width:100%; margin: 0 auto; height: 100%;">
-                        <canvas id="chart-ml"></canvas>
+                <div class="twin-layout" style="align-items: start; max-width:1200px; margin: 20px auto;">
+                    <div class="chart-box" style="width:100%; margin: 0 auto; height: 100%; min-height: 400px; display:flex; align-items:center; justify-content:center;">
+                        <canvas id="chart-ml" style="width:100%; height:100%;"></canvas>
                     </div>
-                    <div class="twin-panel" style="text-align:left;">
-                        <h4 style="color:var(--primary); margin-bottom:10px;"><i class="fas fa-brain"></i> O que é Regressão Linear?</h4>
-                        <p style="font-size:0.95rem; line-height:1.5;">A <strong>Regressão Linear</strong> é um algoritmo clássico de Machine Learning. Ela analisa um conjunto de dados históricos (o seu consumo dos meses passados) e desenha uma "linha de tendência" matemática que melhor se ajusta a esses pontos.</p>
-                        <p style="font-size:0.95rem; line-height:1.5; margin-top:10px;">Ao estender essa linha para o futuro, o modelo consegue <strong>prever</strong> qual será o seu consumo nos próximos meses se você mantiver seus hábitos atuais. O nosso sistema a utiliza para ajudar você a visualizar o impacto a longo prazo!</p>
-                        <div class="alert mt-3" id="ia-alert" style="font-size:0.9rem;"></div>
+                    <div class="twin-panel" style="text-align:left; padding: 30px;">
+                        <h4 style="color:var(--primary); margin-bottom:15px; font-size: 1.4rem;"><i class="fas fa-brain"></i> O que é Regressão Linear?</h4>
+                        <p style="font-size:1.15rem; line-height:1.6;">A <strong>Regressão Linear</strong> é um algoritmo clássico de Machine Learning. Ela analisa um conjunto de dados históricos (o seu consumo dos meses passados) e desenha uma "linha de tendência" matemática que melhor se ajusta a esses pontos.</p>
+                        <p style="font-size:1.15rem; line-height:1.6; margin-top:15px;">Ao estender essa linha para o futuro, o modelo consegue <strong>prever</strong> qual será o seu consumo nos próximos meses se você mantiver seus hábitos atuais. O nosso sistema a utiliza para ajudar você a visualizar o impacto a longo prazo!</p>
+                        <div class="alert mt-4" id="ia-alert" style="font-size:1.05rem;"></div>
                     </div>
                 </div>
             </div>
