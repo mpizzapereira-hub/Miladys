@@ -20,12 +20,15 @@ const state = {
     calc_lavar: 4,
     quiz_score: 0,
     vazamentos: []
-};
+// =============================================================================
+// NAVEGAÇÃO ENTRE TELAS E FLUXO PRINCIPAL
+// =============================================================================
+let currentStep = 1;
+const totalSteps = 2;
 
-// Navegação de Telas Principais (Welcome -> Quiz Inicial -> Loading -> Dashboard)
-function showScreen(id) {
+function showScreen(screenId) {
     document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
-    document.getElementById(id).classList.add('active');
+    document.getElementById(screenId).classList.add('active');
 }
 
 function nextStep(step) {
@@ -48,27 +51,18 @@ function updateProgress() {
 document.getElementById('inp-energia')?.addEventListener('input', function() {
     document.getElementById('val-energia').innerText = this.value + ' kWh';
 });
-document.getElementById('inp-carne')?.addEventListener('input', function() {
-    document.getElementById('val-carne').innerText = this.value + ' vezes/semana';
-});
-document.getElementById('inp-carro')?.addEventListener('input', function() {
-    document.getElementById('val-carro').innerText = this.value + ' km';
-});
 
 // Finaliza Quiz Inicial e Inicializa Todo o Dashboard
 function finalizarQuiz() {
-    state.moradores = parseInt(document.getElementById('inp-moradores').value) || 1;
+    state.moradores = parseInt(document.getElementById('inp-moradores').value) || 4;
     state.energia_kwh = parseInt(document.getElementById('inp-energia').value) || 220;
-    state.carne = parseInt(document.getElementById('inp-carne').value) || 0;
-    state.carro = parseInt(document.getElementById('inp-carro').value) || 0;
-    state.reciclagem = document.getElementById('inp-reciclagem').value || 'asvezes';
     
     showScreen('screen-loading');
     setTimeout(() => {
         showScreen('screen-dashboard');
         initDashboard();
         gerarQRCode();
-    }, 1500);
+    }, 1200);
 }
 
 // Navegação das 8 Abas
@@ -108,17 +102,7 @@ let chartDonut, chartBar, chartML;
 
 function initDashboard() {
     const co2_energia = state.energia_kwh * 0.085 * 12;
-    const co2_moradores = state.moradores * 160;
-    
-    // Novas Variáveis
-    const co2_carne = (state.carne || 0) * 120; // Estimativa de kg CO2 por frequência anual
-    const co2_carro = ((state.carro || 0) * 52) * 0.15; // km anuais * taxa emissão
-    
-    let fator_reciclagem = 1.0;
-    if (state.reciclagem === 'sempre') fator_reciclagem = 0.8; // 20% desconto no geral
-    if (state.reciclagem === 'asvezes') fator_reciclagem = 0.95;
-
-    state.co2 = (co2_energia + co2_moradores + co2_carne + co2_carro) * fator_reciclagem;
+    state.co2 = co2_energia + (state.moradores * 160);
     state.arvores = Math.round(state.co2 / 15);
     const meta_red = state.co2 * 0.85;
 
