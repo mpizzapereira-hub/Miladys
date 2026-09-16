@@ -968,19 +968,13 @@ function onWindowResize() {
 // =============================================================================
 // ABA 5: CHAT AERO INTERATIVO
 // =============================================================================
-const chatInput = document.getElementById('chat-input');
-if (chatInput) {
-    chatInput.addEventListener('keypress', e => { if(e.key === 'Enter') sendChat(); });
-}
-
 function sendChat(btnMsg) {
-    const text = btnMsg || (chatInput ? chatInput.value.trim() : '');
+    const text = btnMsg;
     if(!text) return;
     
     const win = document.getElementById('chat-window');
     if (win) {
         win.innerHTML += `<div class="chat-message user">${text}</div>`;
-        if (!btnMsg && chatInput) chatInput.value = '';
         win.scrollTop = win.scrollHeight;
 
         setTimeout(() => {
@@ -1006,34 +1000,49 @@ function sendChat(btnMsg) {
                 `Água e energia andam juntas. Se formos diminuir os ${state.calc_banho} min de banho, estaremos ajudando na conta de luz e na conservação hídrica também.`
             ];
 
-            const respostasVazamento = [
-                `Vazamentos são silenciosos! Lembre-se que registrar vazamentos na nossa aba ajuda a auditar quanto de água tratada você está perdendo.`,
-                `Um pequeno filete de água escapando na privada desperdiça milhares de litros. Fique atento e use a ferramenta "Registro de Vazamentos"!`
+            const respostasPerfil = [
+                `Aqui vai um raio-X rápido do seu perfil EcoTwin:\n\n🌍 **Pegada de Carbono:** ${state.co2.toFixed(1)} kg CO₂e\n🏡 **Nível Fazenda:** ${state.nivel_fazenda}\n⚡ **Energia:** ${state.energia_kwh} kWh/mês\n\nContinue ajustando as barras para ver a mágica acontecer em tempo real!`,
+                `Baseado nos seus dados de ${state.moradores} morador(es), sua pegada está em ${state.co2.toFixed(1)} kg CO₂e anuais. Temos grandes oportunidades de melhoria focando nos banhos de ${state.calc_banho} min e na reciclagem!`
+            ];
+
+            const respostasCarbono = [
+                `Sua pegada de carbono atual é equivalente a **${state.co2.toFixed(1)} kg CO₂e anuais**. Isso significa que precisaríamos de aproximadamente **${state.arvores} árvores adultas** só para neutralizar seu estilo de vida!`,
+                `A emissão de carbono (CO₂) vem de tudo o que consumimos, desde os banhos quentes até compras e carro. Neutralizá-lo com nossa Fazendinha (plantio de árvores virtuais) ajuda você a enxergar a quantidade de vida natural necessária para repor esse impacto.`
+            ];
+
+            const respostasDesafio = [
+                `Na aba "Desafio Ecológico", você tem 10 perguntas mito ou verdade. Que tal testar seus conhecimentos e descobrir quão sustentável você realmente é? Cada acerto dispara fogos e comemorações na tela!`,
+                `O Quiz é uma ótima forma de se testar! Você sabia, por exemplo, que lâmpadas LED consomem até 80% menos que as antigas? Vá para o Quiz e desafie seus amigos.`
             ];
 
             const respostasDefault = [
-                `Interessante... Como copiloto EcoTwin, posso ajudar com cálculos de CO₂, energia, dicas sobre a Fazenda 3D, banhos ou até sobre seus vazamentos. O que prefere explorar?`,
-                `Excelente ponto. Lembre-se que você pode gerar seu Laudo PDF oficial com todos os resultados ou testar seu nível de conhecimento no Quiz 10 perguntas!`,
-                `Sua pegada total é de ${state.co2.toFixed(1)} kg CO₂e. Posso te ajudar a entender melhor esse número se quiser perguntar sobre 'energia', 'banho', ou 'fazendinha'.`
+                `Interessante... Como copiloto EcoTwin, posso ajudar com cálculos de CO₂, energia, dicas sobre a Fazenda 3D, banhos ou até sobre seus vazamentos. O que prefere explorar?`
             ];
 
             function getRandom(arr) { return arr[Math.floor(Math.random() * arr.length)]; }
 
-            if (txt.includes('energia') || txt.includes('luz') || txt.includes('kwh')) {
+            if (txt.includes('energia')) {
                 resp = getRandom(respostasEnergia);
-            } else if (txt.includes('fazendinha') || txt.includes('3d') || txt.includes('plantio') || txt.includes('arvore') || txt.includes('árvore')) {
+            } else if (txt.includes('fazendinha') || txt.includes('3d')) {
                 resp = getRandom(respostasFazenda);
-            } else if (txt.includes('banho') || txt.includes('água') || txt.includes('agua')) {
+            } else if (txt.includes('banho') || txt.includes('água')) {
                 resp = getRandom(respostasBanho);
-            } else if (txt.includes('vazamento') || txt.includes('torneira') || txt.includes('desperdício')) {
-                resp = getRandom(respostasVazamento);
+            } else if (txt.includes('perfil') || txt.includes('resumo')) {
+                resp = getRandom(respostasPerfil);
+            } else if (txt.includes('carbono') || txt.includes('pegada')) {
+                resp = getRandom(respostasCarbono);
+            } else if (txt.includes('desafio') || txt.includes('quiz')) {
+                resp = getRandom(respostasDesafio);
             } else {
                 resp = getRandom(respostasDefault);
             }
             
+            // Format markdown-like bold (**text**) to HTML <strong>
+            resp = resp.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>').replace(/\n/g, '<br>');
+
             win.innerHTML += `<div class="chat-message assistant"><strong>🤖 Aero:</strong> ${resp}</div>`;
             win.scrollTop = win.scrollHeight;
-        }, 600);
+        }, 500);
     }
 }
 
@@ -1125,8 +1134,90 @@ function verificarQuiz10() {
 }
 
 // =============================================================================
-// ABA 7: VAZAMENTOS
+// ENGINE THREE.JS: SIMULAÇÃO 3D DE VAZAMENTOS (WEBGL)
 // =============================================================================
+let leakScene, leakCamera, leakRenderer, leakDropSystem;
+let dropTimer = 0;
+let dropInterval = 60; // frames entre gotas
+
+function initThreeLeak() {
+    const container = document.getElementById('vaz-3d-canvas-container');
+    if (!container || typeof THREE === 'undefined') return;
+
+    const width = container.clientWidth || 400;
+    const height = container.clientHeight || 450;
+
+    leakScene = new THREE.Scene();
+    leakScene.background = new THREE.Color(0x0a1912); // fundo escuro combinando com tema
+
+    leakCamera = new THREE.PerspectiveCamera(40, width / height, 0.1, 100);
+    leakCamera.position.set(0, 2, 6);
+
+    leakRenderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
+    leakRenderer.setSize(width, height);
+    leakRenderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+    
+    container.innerHTML = '';
+    container.appendChild(leakRenderer.domElement);
+
+    // Iluminação
+    const light = new THREE.DirectionalLight(0xffffff, 1);
+    light.position.set(2, 5, 3);
+    leakScene.add(light);
+    leakScene.add(new THREE.AmbientLight(0x404040, 1.5));
+
+    // Torneira / Cano Simples 3D
+    const pipeGeo = new THREE.CylinderGeometry(0.2, 0.2, 2, 16);
+    const pipeMat = new THREE.MeshStandardMaterial({ color: 0x94A3B8, metalness: 0.8, roughness: 0.2 });
+    const pipe = new THREE.Mesh(pipeGeo, pipeMat);
+    pipe.position.set(0, 2.5, 0);
+    leakScene.add(pipe);
+
+    const nozzleGeo = new THREE.CylinderGeometry(0.2, 0.15, 0.5, 16);
+    const nozzle = new THREE.Mesh(nozzleGeo, pipeMat);
+    nozzle.position.set(0, 1.4, 0);
+    leakScene.add(nozzle);
+
+    // Sistema de Gotas
+    leakDropSystem = new THREE.Group();
+    leakScene.add(leakDropSystem);
+
+    animateLeak();
+}
+
+function createDrop() {
+    const dropGeo = new THREE.SphereGeometry(0.08, 8, 8);
+    const dropMat = new THREE.MeshStandardMaterial({ color: 0x38BDF8, transparent: true, opacity: 0.8, roughness: 0.1 });
+    const drop = new THREE.Mesh(dropGeo, dropMat);
+    drop.position.set(0, 1.2, 0);
+    drop.userData.velocity = 0;
+    leakDropSystem.add(drop);
+}
+
+function animateLeak() {
+    requestAnimationFrame(animateLeak);
+    if (!leakScene) return;
+
+    dropTimer++;
+    if (dropTimer >= dropInterval) {
+        createDrop();
+        dropTimer = 0;
+    }
+
+    for (let i = leakDropSystem.children.length - 1; i >= 0; i--) {
+        let drop = leakDropSystem.children[i];
+        drop.userData.velocity += 0.005; // gravidade
+        drop.position.y -= drop.userData.velocity;
+
+        // Resetar gota ao bater no fundo
+        if (drop.position.y < -3) {
+            leakDropSystem.remove(drop);
+        }
+    }
+
+    leakRenderer.render(leakScene, leakCamera);
+}
+
 function updVazCalc(val) {
     document.getElementById('vaz-int-val').innerText = val;
     const dia = val * 25; // 25 litros por dia por ponto de severidade
@@ -1138,6 +1229,15 @@ function updVazCalc(val) {
     document.getElementById('vaz-mes').innerText = `${mes.toLocaleString('pt-BR')} L`;
     
     document.getElementById('vaz-didatico').innerText = `${mes.toLocaleString('pt-BR')} litros/mês`;
+    
+    // Atualiza a frequência das gotas no 3D
+    // val 1 (lento) -> 60 frames, val 10 (rápido) -> 5 frames
+    dropInterval = Math.max(2, 65 - (val * 6));
+    
+    // Inicializa o 3D se não estiver iniciado
+    if (!leakScene && document.getElementById('vaz-3d-canvas-container')) {
+        setTimeout(initThreeLeak, 200);
+    }
     
     // Um banho de 5 min consome aprox 45 litros (chuveiro normal)
     const banhos = Math.floor(mes / 45);

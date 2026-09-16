@@ -101,19 +101,29 @@ body.theme-polluted { background-color: var(--bg-polluted); background-image: no
 }
 
 .exp-line {
-    font-size: 1.05rem;
+    font-size: 1.15rem;
     color: #F8FAFC;
-    line-height: 1.45;
-    margin-bottom: 7px;
+    line-height: 1.5;
+    margin-bottom: 9px;
     display: flex;
     align-items: baseline;
-    gap: 10px;
+    gap: 12px;
 }
 
 .exp-line:last-child {
     margin-bottom: 0;
     color: #6EE7B7;
     font-weight: 700;
+}
+
+/* Remover setas (spinners) de inputs do tipo number */
+input[type=number]::-webkit-inner-spin-button, 
+input[type=number]::-webkit-outer-spin-button { 
+    -webkit-appearance: none; 
+    margin: 0; 
+}
+input[type=number] {
+    -moz-appearance: textfield;
 }
 
 .exp-line i {
