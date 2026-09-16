@@ -1136,10 +1136,14 @@ function verificarQuiz10() {
 // =============================================================================
 // ENGINE THREE.JS: SIMULAÇÃO 3D DE VAZAMENTOS (WEBGL)
 // =============================================================================
-let leakScene, leakCamera, leakRenderer, leakDropSystem, leakModelGroup, leakControls;
+let leakScene, leakCamera, leakRenderer, leakDropSystem, leakControls;
 let dropTimer = 0;
 let dropInterval = 60;
 let currentDropSpawn = new THREE.Vector3(0, 1.2, 0);
+let targetCameraPos = new THREE.Vector3(0, 3, 6);
+let targetControlCenter = new THREE.Vector3(0, 1, 0);
+let dropDeathY = 0;
+let currentLeakType = "";
 
 function initThreeLeak() {
     const container = document.getElementById('vaz-3d-canvas-container');
@@ -1149,18 +1153,16 @@ function initThreeLeak() {
     const height = container.clientHeight || 450;
 
     leakScene = new THREE.Scene();
-    
-    // Fundo Studio
-    leakScene.background = new THREE.Color(0x0f1b14);
+    leakScene.background = new THREE.Color(0x0a1118); // Ambiente sofisticado
 
-    leakCamera = new THREE.PerspectiveCamera(40, width / height, 0.1, 100);
-    leakCamera.position.set(0, 2, 8);
+    leakCamera = new THREE.PerspectiveCamera(45, width / height, 0.1, 100);
+    leakCamera.position.set(0, 4, 8);
 
-    leakRenderer = new THREE.WebGLRenderer({ antialias: true, alpha: false });
+    leakRenderer = new THREE.WebGLRenderer({ antialias: true });
     leakRenderer.setSize(width, height);
     leakRenderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
     
-    // Habilitar Sombras Realistas
+    // Sombras Reais
     leakRenderer.shadowMap.enabled = true;
     leakRenderer.shadowMap.type = THREE.PCFSoftShadowMap;
     leakRenderer.toneMapping = THREE.ACESFilmicToneMapping;
@@ -1168,45 +1170,32 @@ function initThreeLeak() {
     container.innerHTML = '';
     container.appendChild(leakRenderer.domElement);
 
-    // Controles de Mouse (OrbitControls 360)
     if (typeof THREE.OrbitControls !== 'undefined') {
         leakControls = new THREE.OrbitControls(leakCamera, leakRenderer.domElement);
         leakControls.enableDamping = true;
         leakControls.dampingFactor = 0.05;
-        leakControls.minDistance = 2;
+        leakControls.minDistance = 1;
         leakControls.maxDistance = 15;
-        leakControls.target.set(0, 0, 0);
+        leakControls.target.set(0, 1, 0);
     }
 
-    // Iluminação de Estúdio PBR
-    const spotLight = new THREE.SpotLight(0xffffff, 2.5);
-    spotLight.position.set(4, 7, 5);
+    // Iluminação do Cenário
+    const spotLight = new THREE.SpotLight(0xffffff, 2.5, 20, Math.PI/4, 0.5, 1);
+    spotLight.position.set(0, 7, 2);
     spotLight.castShadow = true;
     spotLight.shadow.mapSize.width = 1024;
     spotLight.shadow.mapSize.height = 1024;
     spotLight.shadow.bias = -0.001;
     leakScene.add(spotLight);
 
-    const fillLight = new THREE.DirectionalLight(0x88bbff, 1.0);
-    fillLight.position.set(-4, 3, -4);
+    const fillLight = new THREE.DirectionalLight(0x88bbff, 1.2);
+    fillLight.position.set(-4, 3, 5);
     leakScene.add(fillLight);
+    
+    leakScene.add(new THREE.AmbientLight(0xffffff, 0.5));
 
-    leakScene.add(new THREE.AmbientLight(0xffffff, 0.4));
-
-    // Cenário Fundo Minimalista (Parede Curva Studio)
-    const studioGeo = new THREE.CylinderGeometry(15, 15, 20, 32, 1, true, -Math.PI/2, Math.PI);
-    const studioMat = new THREE.MeshStandardMaterial({ color: 0x0b1610, side: THREE.BackSide, roughness: 1.0 });
-    const studioWall = new THREE.Mesh(studioGeo, studioMat);
-    studioWall.receiveShadow = true;
-    leakScene.add(studioWall);
-
-    const floorGeo = new THREE.PlaneGeometry(30, 30);
-    const floorMat = new THREE.MeshStandardMaterial({ color: 0x0b1610, roughness: 0.8 });
-    const floor = new THREE.Mesh(floorGeo, floorMat);
-    floor.rotation.x = -Math.PI / 2;
-    floor.position.y = -2;
-    floor.receiveShadow = true;
-    leakScene.add(floor);
+    // Construção do Cenário Fixo (Banheiro Completo)
+    buildBathroomScene(leakScene);
 
     leakDropSystem = new THREE.Group();
     leakScene.add(leakDropSystem);
@@ -1217,8 +1206,124 @@ function initThreeLeak() {
     animateLeak();
 }
 
-function enableShadows(group) {
-    group.traverse((child) => {
+function buildBathroomScene(scene) {
+    const matParedeAzulejo = new THREE.MeshStandardMaterial({ color: 0x1e293b, roughness: 0.7 });
+    const matChao = new THREE.MeshStandardMaterial({ color: 0x0f172a, roughness: 0.5 });
+    const matPorcelana = new THREE.MeshStandardMaterial({ color: 0xfdfdfd, roughness: 0.1, metalness: 0.05 });
+    const matMetal = new THREE.MeshStandardMaterial({ color: 0xcccccc, roughness: 0.1, metalness: 0.95 });
+    const matPVC = new THREE.MeshStandardMaterial({ color: 0xcbd5e1, roughness: 0.3, metalness: 0.1 });
+    const matDark = new THREE.MeshStandardMaterial({ color: 0x000000, roughness: 0.9 });
+
+    // Estrutura da Sala
+    const backWall = new THREE.Mesh(new THREE.BoxGeometry(8, 6, 0.2), matParedeAzulejo);
+    backWall.position.set(0, 3, -3);
+    backWall.receiveShadow = true;
+    scene.add(backWall);
+
+    const leftWall = new THREE.Mesh(new THREE.BoxGeometry(0.2, 6, 6), matParedeAzulejo);
+    leftWall.position.set(-4, 3, 0);
+    leftWall.receiveShadow = true;
+    scene.add(leftWall);
+
+    const floor = new THREE.Mesh(new THREE.BoxGeometry(8, 0.2, 6), matChao);
+    floor.position.set(0, -0.1, 0);
+    floor.receiveShadow = true;
+    scene.add(floor);
+
+    // 1. Pia e Torneira (Esquerda)
+    const bancada = new THREE.Mesh(new THREE.BoxGeometry(2.5, 0.15, 1.5), matParedeAzulejo);
+    bancada.position.set(-2.5, 1.2, -2.25);
+    scene.add(bancada);
+
+    const cuba = new THREE.Mesh(new THREE.SphereGeometry(0.6, 32, 16, 0, Math.PI*2, 0, Math.PI/2), matPorcelana);
+    cuba.rotation.x = Math.PI;
+    cuba.position.set(-2.5, 1.3, -2.0);
+    cuba.scale.set(1, 0.4, 0.8);
+    scene.add(cuba);
+
+    const borda = new THREE.Mesh(new THREE.TorusGeometry(0.6, 0.06, 16, 32), matPorcelana);
+    borda.rotation.x = Math.PI / 2;
+    borda.position.set(-2.5, 1.3, -2.0);
+    borda.scale.set(1, 0.8, 1);
+    scene.add(borda);
+
+    const raloPia = new THREE.Mesh(new THREE.CylinderGeometry(0.08, 0.08, 0.05, 32), matMetal);
+    raloPia.position.set(-2.5, 1.1, -2.0);
+    scene.add(raloPia);
+
+    const baseTorneira = new THREE.Mesh(new THREE.CylinderGeometry(0.08, 0.1, 0.2, 32), matMetal);
+    baseTorneira.position.set(-2.5, 1.4, -2.6);
+    scene.add(baseTorneira);
+
+    const canoTorneira = new THREE.Mesh(new THREE.CylinderGeometry(0.04, 0.04, 0.6, 32), matMetal);
+    canoTorneira.position.set(-2.5, 1.7, -2.6);
+    scene.add(canoTorneira);
+
+    const curvaTorneira = new THREE.Mesh(new THREE.TorusGeometry(0.15, 0.04, 16, 32, Math.PI/2), matMetal);
+    curvaTorneira.position.set(-2.5, 2.0, -2.45);
+    curvaTorneira.rotation.y = Math.PI / 2;
+    scene.add(curvaTorneira);
+
+    const bicoTorneira = new THREE.Mesh(new THREE.CylinderGeometry(0.05, 0.04, 0.15, 32), matMetal);
+    bicoTorneira.position.set(-2.5, 2.08, -2.3);
+    scene.add(bicoTorneira);
+
+    // 2. Vaso Sanitário (Direita)
+    const tanque = new THREE.Mesh(new THREE.BoxGeometry(0.8, 0.7, 0.4), matPorcelana);
+    tanque.position.set(2.5, 0.8, -2.7);
+    scene.add(tanque);
+
+    const bacia = new THREE.Mesh(new THREE.CylinderGeometry(0.4, 0.3, 0.7, 32), matPorcelana);
+    bacia.scale.set(1, 1, 1.3);
+    bacia.position.set(2.5, 0.35, -2.2);
+    scene.add(bacia);
+
+    const interiorVaso = new THREE.Mesh(new THREE.CylinderGeometry(0.3, 0.2, 0.71, 32), matDark);
+    interiorVaso.scale.set(1, 1, 1.3);
+    interiorVaso.position.set(2.5, 0.35, -2.15);
+    scene.add(interiorVaso);
+
+    const assento = new THREE.Mesh(new THREE.TorusGeometry(0.4, 0.08, 16, 32), matPorcelana);
+    assento.rotation.x = Math.PI / 2;
+    assento.scale.set(1, 1.3, 1);
+    assento.position.set(2.5, 0.7, -2.2);
+    scene.add(assento);
+
+    // 3. Chuveiro (Centro Alto)
+    const espelhoChuveiro = new THREE.Mesh(new THREE.CylinderGeometry(0.15, 0.15, 0.05, 32), matMetal);
+    espelhoChuveiro.rotation.x = Math.PI / 2;
+    espelhoChuveiro.position.set(0, 4.5, -2.9);
+    scene.add(espelhoChuveiro);
+
+    const hasteChuveiro = new THREE.Mesh(new THREE.CylinderGeometry(0.04, 0.04, 0.8, 16), matMetal);
+    hasteChuveiro.rotation.x = Math.PI / 2;
+    hasteChuveiro.position.set(0, 4.5, -2.5);
+    scene.add(hasteChuveiro);
+
+    const cabecaChuveiro = new THREE.Mesh(new THREE.CylinderGeometry(0.3, 0.3, 0.1, 32), matMetal);
+    cabecaChuveiro.rotation.x = Math.PI / 6;
+    cabecaChuveiro.position.set(0, 4.4, -2.1);
+    scene.add(cabecaChuveiro);
+
+    // 4. Cano com Infiltração (Parede Esquerda)
+    const canoPVC = new THREE.Mesh(new THREE.CylinderGeometry(0.15, 0.15, 4, 32), matPVC);
+    canoPVC.rotation.x = Math.PI / 2;
+    canoPVC.position.set(-3.85, 2.0, 0);
+    scene.add(canoPVC);
+
+    const rachadura = new THREE.Mesh(new THREE.PlaneGeometry(0.2, 0.05), matDark);
+    rachadura.rotation.y = Math.PI / 2;
+    rachadura.position.set(-3.75, 2.0, 0.5);
+    scene.add(rachadura);
+
+    const matUmidade = new THREE.MeshStandardMaterial({ color: 0x0f172a, roughness: 0.1, transparent: true, opacity: 0.6 });
+    const umidade = new THREE.Mesh(new THREE.PlaneGeometry(2, 3), matUmidade);
+    umidade.rotation.y = Math.PI / 2;
+    umidade.position.set(-3.89, 1.5, 0.5);
+    scene.add(umidade);
+
+    // Habilitar sombras para todos os meshes
+    scene.traverse((child) => {
         if (child.isMesh) {
             child.castShadow = true;
             child.receiveShadow = true;
@@ -1228,195 +1333,50 @@ function enableShadows(group) {
 
 function changeLeakModel(type) {
     if (!leakScene) return;
-    if (leakModelGroup) {
-        leakScene.remove(leakModelGroup);
-    }
-    leakModelGroup = new THREE.Group();
+    currentLeakType = type;
     
-    // Materiais PBR Realistas
-    const matPorcelana = new THREE.MeshStandardMaterial({ color: 0xfdfdfd, roughness: 0.1, metalness: 0.05 });
-    const matMetal = new THREE.MeshStandardMaterial({ color: 0xcccccc, roughness: 0.1, metalness: 0.95 });
-    const matParedeAzulejo = new THREE.MeshStandardMaterial({ color: 0x1e293b, roughness: 0.6 });
-    const matPVC = new THREE.MeshStandardMaterial({ color: 0xcbd5e1, roughness: 0.3, metalness: 0.1 });
-    const matDark = new THREE.MeshStandardMaterial({ color: 0x000000, roughness: 0.9 });
-
-    if (type.includes('Torneira')) {
-        // Modelo 1: PIA E TORNEIRA REALISTAS
-        
-        // Cuba arredondada (Esfera cortada)
-        const cuba = new THREE.Mesh(new THREE.SphereGeometry(1.6, 32, 16, 0, Math.PI*2, 0, Math.PI/2), matPorcelana);
-        cuba.rotation.x = Math.PI;
-        cuba.position.set(0, 0, 0);
-        cuba.scale.set(1, 0.4, 0.8);
-        leakModelGroup.add(cuba);
-
-        const borda = new THREE.Mesh(new THREE.TorusGeometry(1.6, 0.15, 16, 32), matPorcelana);
-        borda.rotation.x = Math.PI / 2;
-        borda.position.set(0, 0, 0);
-        borda.scale.set(1, 0.8, 1);
-        leakModelGroup.add(borda);
-        
-        const ralo = new THREE.Mesh(new THREE.CylinderGeometry(0.18, 0.18, 0.05, 32), matMetal);
-        ralo.position.set(0, -0.6, 0);
-        leakModelGroup.add(ralo);
-
-        // Corpo da Torneira Curvado
-        const base = new THREE.Mesh(new THREE.CylinderGeometry(0.12, 0.15, 0.3, 32), matMetal);
-        base.position.set(0, 0.15, -1.0);
-        leakModelGroup.add(base);
-
-        const canoReto = new THREE.Mesh(new THREE.CylinderGeometry(0.08, 0.08, 1.2, 32), matMetal);
-        canoReto.position.set(0, 0.9, -1.0);
-        leakModelGroup.add(canoReto);
-
-        // Curva da torneira (Torus 1/4)
-        const curva = new THREE.Mesh(new THREE.TorusGeometry(0.3, 0.08, 16, 32, Math.PI/2), matMetal);
-        curva.position.set(0, 1.5, -0.7);
-        curva.rotation.y = Math.PI / 2;
-        leakModelGroup.add(curva);
-
-        const bico = new THREE.Mesh(new THREE.CylinderGeometry(0.1, 0.08, 0.2, 32), matMetal);
-        bico.position.set(0, 1.7, -0.4);
-        leakModelGroup.add(bico);
-
-        currentDropSpawn.set(0, 1.55, -0.4);
-        leakModelGroup.position.y = -0.5;
-
-    } else if (type.includes('Vaso')) {
-        // Modelo 2: VASO SANITÁRIO REALISTA
-        
-        // Caixa acoplada com tampa
-        const tanque = new THREE.Mesh(new THREE.BoxGeometry(1.6, 1.2, 0.7), matPorcelana);
-        tanque.position.set(0, 1.2, -1.0);
-        leakModelGroup.add(tanque);
-        
-        const tampaTanque = new THREE.Mesh(new THREE.BoxGeometry(1.65, 0.1, 0.75), matPorcelana);
-        tampaTanque.position.set(0, 1.85, -1.0);
-        leakModelGroup.add(tampaTanque);
-
-        const botao = new THREE.Mesh(new THREE.CylinderGeometry(0.1, 0.1, 0.05, 16), matMetal);
-        botao.position.set(0, 1.9, -1.0);
-        leakModelGroup.add(botao);
-
-        // Bacia Ovalada
-        const bacia = new THREE.Mesh(new THREE.CylinderGeometry(0.7, 0.5, 1.4, 32), matPorcelana);
-        bacia.scale.set(1, 1, 1.3);
-        bacia.position.set(0, 0, -0.2);
-        leakModelGroup.add(bacia);
-
-        const buraco = new THREE.Mesh(new THREE.CylinderGeometry(0.55, 0.4, 1.41, 32), matDark);
-        buraco.scale.set(1, 1, 1.3);
-        buraco.position.set(0, 0, -0.15);
-        leakModelGroup.add(buraco);
-
-        // Assento e Tampa
-        const assento = new THREE.Mesh(new THREE.TorusGeometry(0.7, 0.12, 16, 32), matPorcelana);
-        assento.rotation.x = Math.PI / 2;
-        assento.scale.set(1, 1.3, 1);
-        assento.position.set(0, 0.75, -0.2);
-        leakModelGroup.add(assento);
-
-        currentDropSpawn.set(0, 0.7, -0.9);
-        leakModelGroup.position.y = -0.8;
-
-    } else if (type.includes('Chuveiro')) {
-        // Modelo 3: CHUVEIRO REALISTA
-        
-        // Parede de Azulejos
-        const parede = new THREE.Mesh(new THREE.BoxGeometry(6, 6, 0.2), matParedeAzulejo);
-        parede.position.set(0, 1, -1.5);
-        leakModelGroup.add(parede);
-
-        // Acabamento na parede
-        const espelho = new THREE.Mesh(new THREE.CylinderGeometry(0.3, 0.3, 0.1, 32), matMetal);
-        espelho.rotation.x = Math.PI / 2;
-        espelho.position.set(0, 3, -1.4);
-        leakModelGroup.add(espelho);
-
-        // Haste do chuveiro
-        const haste = new THREE.Mesh(new THREE.CylinderGeometry(0.06, 0.06, 1.5, 16), matMetal);
-        haste.rotation.x = Math.PI / 2;
-        haste.position.set(0, 3, -0.7);
-        leakModelGroup.add(haste);
-
-        // Junção esférica
-        const articulacao = new THREE.Mesh(new THREE.SphereGeometry(0.15, 16, 16), matMetal);
-        articulacao.position.set(0, 3, 0);
-        leakModelGroup.add(articulacao);
-
-        // Espalhador do Chuveiro
-        const cabeca = new THREE.Mesh(new THREE.CylinderGeometry(0.6, 0.6, 0.15, 32), matMetal);
-        cabeca.rotation.x = Math.PI / 6;
-        cabeca.position.set(0, 2.85, 0.1);
-        leakModelGroup.add(cabeca);
-
-        currentDropSpawn.set(0, 2.7, 0.15);
-        leakModelGroup.position.y = -1.5;
-
-    } else if (type.includes('Cano')) {
-        // Modelo 4: CANO DE PVC COM INFILTRAÇÃO REALISTA
-        
-        const parede = new THREE.Mesh(new THREE.BoxGeometry(6, 6, 0.2), matParedeAzulejo);
-        parede.position.set(0, 1, -1);
-        leakModelGroup.add(parede);
-
-        // Cano PVC grosso
-        const cano = new THREE.Mesh(new THREE.CylinderGeometry(0.3, 0.3, 7, 32), matPVC);
-        cano.rotation.z = Math.PI / 2;
-        cano.position.set(0, 1, 0);
-        leakModelGroup.add(cano);
-
-        // Luva de união (detalhe no cano)
-        const luva = new THREE.Mesh(new THREE.CylinderGeometry(0.33, 0.33, 0.6, 32), matPVC);
-        luva.rotation.z = Math.PI / 2;
-        luva.position.set(1.5, 1, 0);
-        leakModelGroup.add(luva);
-
-        // Rachadura visível (polígono escuro)
-        const rachadura = new THREE.Mesh(new THREE.PlaneGeometry(0.3, 0.1), matDark);
-        rachadura.rotation.z = Math.PI / 12;
-        rachadura.position.set(0, 0.85, 0.31);
-        leakModelGroup.add(rachadura);
-
-        // Mancha de água molhada na parede
-        const matUmidade = new THREE.MeshStandardMaterial({ color: 0x0f172a, roughness: 0.1, transparent: true, opacity: 0.6 });
-        const umidade = new THREE.Mesh(new THREE.PlaneGeometry(3, 4), matUmidade);
-        umidade.position.set(0, 0.5, -0.89);
-        leakModelGroup.add(umidade);
-
-        currentDropSpawn.set(0, 0.8, 0.35);
-    }
-
-    enableShadows(leakModelGroup);
-    leakScene.add(leakModelGroup);
-    
-    // Resetar gotas e centralizar câmera
+    // Limpar gotas ativas
     while(leakDropSystem.children.length > 0) { 
         leakDropSystem.remove(leakDropSystem.children[0]); 
     }
 
-    if(leakControls) {
-        leakControls.target.copy(leakModelGroup.position);
-        leakControls.target.y += 1;
-        leakCamera.position.set(0, 2, 7);
+    // Definir posições dinâmicas de câmera e gotas para a animação (lerp)
+    if (type.includes('Torneira')) {
+        targetCameraPos.set(-2.5, 2.5, 0.5);
+        targetControlCenter.set(-2.5, 1.3, -2.0);
+        currentDropSpawn.set(-2.5, 1.95, -2.3);
+        dropDeathY = 1.1; // Bate na cuba
+    } else if (type.includes('Vaso')) {
+        targetCameraPos.set(2.5, 2.0, 0.5);
+        targetControlCenter.set(2.5, 0.5, -2.2);
+        currentDropSpawn.set(2.5, 0.68, -2.6);
+        dropDeathY = 0.4; // Bate no fundo do vaso
+    } else if (type.includes('Chuveiro')) {
+        targetCameraPos.set(0, 4.0, 0.5);
+        targetControlCenter.set(0, 2.5, -2.1);
+        currentDropSpawn.set(0, 4.3, -2.1);
+        dropDeathY = 0.0; // Bate no chão
+    } else if (type.includes('Cano')) {
+        targetCameraPos.set(-1.5, 2.0, 2.0);
+        targetControlCenter.set(-3.8, 1.5, 0.5);
+        currentDropSpawn.set(-3.7, 2.0, 0.5);
+        dropDeathY = 0.0; // Bate no chão
     }
 }
 
 function createDrop() {
-    const dropGeo = new THREE.SphereGeometry(0.06, 16, 16);
-    const dropMat = new THREE.MeshStandardMaterial({ color: 0x7dd3fc, transparent: true, opacity: 0.85, roughness: 0.0, metalness: 0.1 });
+    const dropGeo = new THREE.SphereGeometry(0.04, 8, 8);
+    const dropMat = new THREE.MeshStandardMaterial({ color: 0x7dd3fc, transparent: true, opacity: 0.8, roughness: 0.0, metalness: 0.1 });
     const drop = new THREE.Mesh(dropGeo, dropMat);
     drop.castShadow = true;
     
-    const isCano = document.getElementById('vaz-local').value.includes('Cano');
-    
+    const isCano = currentLeakType.includes('Cano');
     drop.position.copy(currentDropSpawn);
     
-    // No cano, a água jorra para o lado
     if (isCano) {
-        drop.userData.velY = -0.02;
-        drop.userData.velX = (Math.random() - 0.5) * 0.04;
-        drop.userData.velZ = 0.04 + Math.random() * 0.03;
+        drop.userData.velY = -0.01;
+        drop.userData.velX = 0.06 + Math.random() * 0.03; // Espirra para o lado
+        drop.userData.velZ = (Math.random() - 0.5) * 0.04;
     } else {
         drop.userData.velY = 0;
         drop.userData.velX = (Math.random() - 0.5) * 0.01;
@@ -1430,7 +1390,14 @@ function animateLeak() {
     requestAnimationFrame(animateLeak);
     if (!leakScene) return;
 
-    if (leakControls) leakControls.update();
+    // Transição suave da Câmera (Zoom e Foco Dinâmico)
+    if (leakCamera && targetCameraPos) {
+        leakCamera.position.lerp(targetCameraPos, 0.04);
+        if (leakControls) {
+            leakControls.target.lerp(targetControlCenter, 0.04);
+            leakControls.update();
+        }
+    }
 
     dropTimer++;
     if (dropTimer >= dropInterval) {
@@ -1441,14 +1408,13 @@ function animateLeak() {
     for (let i = leakDropSystem.children.length - 1; i >= 0; i--) {
         let drop = leakDropSystem.children[i];
         
-        drop.userData.velY += 0.005; // gravidade realista
+        drop.userData.velY += 0.005; // gravidade
         
         drop.position.y -= drop.userData.velY;
         drop.position.x += drop.userData.velX;
         drop.position.z += drop.userData.velZ;
 
-        // Se bater no chão/ralo
-        if (drop.position.y < currentDropSpawn.y - 4.0) {
+        if (drop.position.y < dropDeathY) {
             leakDropSystem.remove(drop);
         }
     }
