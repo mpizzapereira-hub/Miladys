@@ -479,6 +479,26 @@ p { font-size: 1.1rem; color: var(--text-muted); }
 .vaz-lista { display:flex; flex-direction: column; gap:10px; margin-top: 15px; }
 .vaz-item { padding: 12px; background: rgba(239, 68, 68, 0.2); border-left: 5px solid var(--danger); border-radius: 6px;}
 
+/* Layout Colunas (50/50) */
+.twin-layout {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 25px;
+    margin-top: 15px;
+    align-items: stretch;
+}
+.twin-panel {
+    background: var(--card-bg);
+    border: 1px solid var(--border);
+    border-radius: 15px;
+    padding: 25px;
+    display: flex;
+    flex-direction: column;
+}
+@media (max-width: 850px) {
+    .twin-layout { grid-template-columns: 1fr; }
+}
+
 /* Widget Aero Flutuante */
 .aero-widget-link { position: fixed; bottom: 20px; right: 25px; z-index: 9999; display: flex; align-items: center; gap: 10px; cursor: pointer; }
 .aero-bubble { background: #FFFFFF; color: #000; padding: 8px 14px; border-radius: 12px 12px 2px 12px; font-weight: 700; border: 2px solid var(--primary); }
