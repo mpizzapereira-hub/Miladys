@@ -582,7 +582,7 @@
                     <!-- Painel Esquerdo: Configurações e Cálculos -->
                     <div class="twin-panel">
                         <label>Local do Vazamento</label>
-                        <select id="vaz-local" class="giant-input" style="font-size: 1.2rem; width:100%;">
+                        <select id="vaz-local" class="giant-input" style="font-size: 1.2rem; width:100%;" onchange="if(typeof changeLeakModel === 'function') changeLeakModel(this.value); updVazCalc(document.getElementById('vaz-int').value);">
                             <option value="Torneira Pingando Lenta">Torneira Pingando Lenta</option>
                             <option value="Torneira Pingando Rápida">Torneira Pingando Rápida</option>
                             <option value="Vaso Sanitário com Filete">Vaso Sanitário (Filete)</option>
