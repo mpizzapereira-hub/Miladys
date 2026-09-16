@@ -234,7 +234,17 @@ p { font-size: 1.1rem; color: var(--text-muted); }
 .icon-red { color: var(--danger); } .icon-blue { color: var(--secondary); } .icon-yellow { color: var(--warning); } .icon-green { color: var(--primary); }
 .metric-box .value { font-size: 2.6rem; font-weight: 900; color: #fff; margin: 8px 0;}
 .charts-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
-.chart-box { background: var(--card-bg); padding: 20px; border-radius: 15px; border: 1px solid var(--border); }
+.chart-box { 
+    background: var(--card-bg); 
+    padding: 20px; 
+    border-radius: 15px; 
+    border: 1px solid var(--border); 
+    min-height: 380px; 
+    display: flex; 
+    flex-direction: column; 
+    justify-content: center;
+}
+.chart-box canvas { flex-grow: 1; max-height: 100%; }
 
 /* Tab 2: Calculadora Pessoal */
 .calc-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 18px; margin-top: 15px; }
